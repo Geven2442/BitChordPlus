@@ -1521,4 +1521,6 @@
     <string name="keep_queued_on_new_play_subtitle">On: songs added with "Play next" that haven\'t played stay at the front when you start another playlist or album. Off: they are cleared</string>
     <string name="car_lyrics_translation">Translation in car lyrics</string>
     <string name="car_lyrics_translation_subtitle">The car lyric line shows "original ／ translation", in the lyrics translation language (needs internet)</string>
+    <string name="phone_lyrics_newline">Lyric on its own line (experimental)</string>
+    <string name="phone_lyrics_newline_subtitle">Title and artist on one line, the lyric on the next; for styles like the Now Bar that merge them into one line. May look different per phone</string>
 </resources>

@@ -682,6 +682,8 @@ object AppSettings {
     val carLyricsOnTitle = MutableStateFlow(false)
     /** Android Auto lyric line also carries a translation (original ／ translation). */
     val carLyricsTranslation = MutableStateFlow(false)
+    /** Experimental: phone lyric line broken onto its own line inside the title (Now Bar / Dynamic island). */
+    val phoneLyricsNewline = MutableStateFlow(false)
     /** Upstream BitChord's queue: songs played from "play next" are removed instead of kept as history. */
     val originalQueueLogic = MutableStateFlow(false)
     /** Starting a new playlist/album keeps songs queued with "play next" that haven't played yet. */
@@ -1194,6 +1196,7 @@ object AppSettings {
         carLyrics.value = prefs.getBoolean(KEY_CAR_LYRICS, true)
         carLyricsOnTitle.value = prefs.getBoolean(KEY_CAR_LYRICS_ON_TITLE, false)
         carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
+        phoneLyricsNewline.value = prefs.getBoolean(KEY_PHONE_LYRICS_NEWLINE, false)
         originalQueueLogic.value = prefs.getBoolean(KEY_ORIGINAL_QUEUE_LOGIC, false)
         keepQueuedOnNewPlay.value = prefs.getBoolean(KEY_KEEP_QUEUED_ON_NEW_PLAY, true)
         phoneLyrics.value = prefs.getBoolean(KEY_PHONE_LYRICS, true)
@@ -1758,6 +1761,11 @@ object AppSettings {
     fun setPhoneLyricsOnTitle(value: Boolean) {
         phoneLyricsOnTitle.value = value
         prefs.edit().putBoolean(KEY_PHONE_LYRICS_ON_TITLE, value).apply()
+    }
+
+    fun setPhoneLyricsNewline(value: Boolean) {
+        phoneLyricsNewline.value = value
+        prefs.edit().putBoolean(KEY_PHONE_LYRICS_NEWLINE, value).apply()
     }
 
     fun setCarLyricsTranslation(value: Boolean) {
@@ -2573,6 +2581,7 @@ object AppSettings {
     private const val KEY_CAR_LYRICS = "car_lyrics"
     private const val KEY_CAR_LYRICS_ON_TITLE = "car_lyrics_on_title"
     private const val KEY_CAR_LYRICS_TRANSLATION = "car_lyrics_translation"
+    private const val KEY_PHONE_LYRICS_NEWLINE = "phone_lyrics_newline"
     private const val KEY_ORIGINAL_QUEUE_LOGIC = "original_queue_logic"
     private const val KEY_KEEP_QUEUED_ON_NEW_PLAY = "keep_queued_on_new_play"
     private const val KEY_PHONE_LYRICS = "phone_lyrics"

@@ -52,6 +52,8 @@ fun QueueActionNoticeHost(
     hazeState: HazeState? = null,
     /** Styled like the mini player (frosted pill) rather than the player sheet's dark slab. */
     matchBar: Boolean = false,
+    /** With [matchBar]: the refractive liquid glass the floating bars use, not a plain frost. */
+    liquidGlass: Boolean = false,
 ) {
     val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
@@ -79,7 +81,9 @@ fun QueueActionNoticeHost(
                     .padding(bottom = 8.dp)
                     .clip(shape)
                     .then(
-                        if (hazeState == null || reduceDynamicBlur) {
+                        if (liquidGlass) {
+                            Modifier.liquidGlass(shape = shape)
+                        } else if (hazeState == null || reduceDynamicBlur) {
                             Modifier.background(MaterialTheme.colorScheme.surface)
                         } else {
                             Modifier.optimizedHazeEffect(
@@ -88,7 +92,7 @@ fun QueueActionNoticeHost(
                             )
                         },
                     )
-                    .border(0.5.dp, Color.White.copy(alpha = 0.10f), shape)
+                    .border(if (liquidGlass) GLASS_EDGE_WIDTH else 0.5.dp, if (liquidGlass) GLASS_EDGE_COLOR else Color.White.copy(alpha = 0.10f), shape)
                     .semantics { liveRegion = LiveRegionMode.Polite }
                     .padding(horizontal = 22.dp),
                 verticalAlignment = Alignment.CenterVertically,

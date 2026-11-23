@@ -1556,4 +1556,6 @@
     <string name="keep_queued_on_new_play_subtitle">開啟後，開始播放新的歌單或專輯時，之前用「下一首播放」加入但還沒播的歌會繼續排在前面；關閉則一併清除</string>
     <string name="car_lyrics_translation">車機歌詞顯示翻譯</string>
     <string name="car_lyrics_translation_subtitle">車機的歌詞行改為「原文 ／ 翻譯」，翻譯語言跟隨歌詞翻譯設定（需要網路）</string>
+    <string name="phone_lyrics_newline">歌詞換行顯示（實驗）</string>
+    <string name="phone_lyrics_newline_subtitle">歌名與歌手排一行，歌詞換到下一行；給動態島／Now Bar 這種只合併成一行的樣式使用，不同機型效果可能不同</string>
 </resources>

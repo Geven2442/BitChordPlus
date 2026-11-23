@@ -4401,7 +4401,7 @@ private fun BitChordApp(
                         .fillMaxWidth()
                         .onSizeChanged { floatingBarsHeight.intValue = it.height },
                 ) {
-                    QueueActionNoticeHost(queueNotice, hazeState = hazeState, matchBar = true)
+                    QueueActionNoticeHost(queueNotice, hazeState = hazeState, matchBar = true, liquidGlass = true)
                     // Liquid glass replaces the two stacked bars with the single
                     // component they are stacked to imitate: the now playing
                     // controls dock into the tab bar rather than riding above it,

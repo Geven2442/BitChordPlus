@@ -8791,9 +8791,22 @@ class PlaybackService : MediaLibraryService() {
         lyricsTickerJob = scope.launch(Dispatchers.Main) {
             while (isActive) {
                 updateLyricSubtitle()
-                delay(500L)
+                delay(nextLyricDelayMs())
             }
         }
+    }
+
+    /**
+     * Wake at the next line's start instead of polling every half second, so a
+     * line is never up to 500 ms late on top of the system's own lag.
+     */
+    private fun nextLyricDelayMs(): Long {
+        val lines = serviceLyrics ?: return 500L
+        val exoPlayer = player ?: return 500L
+        val pos = (crossfade?.loopPositionMs() ?: exoPlayer.currentPosition) + LYRIC_LEAD_MS
+        val next = lines.firstOrNull { it.timeMs > pos } ?: return 500L
+        val speed = exoPlayer.playbackParameters.speed.coerceAtLeast(0.1f)
+        return ((next.timeMs - pos) / speed).toLong().coerceIn(40L, 500L)
     }
 
     private fun stopLyricsTicker() {
@@ -8806,7 +8819,9 @@ class PlaybackService : MediaLibraryService() {
         val exoPlayer = player ?: return
         val currentSong = exoPlayer.currentMediaItem?.toSong() ?: return
         val lines = serviceLyrics
-        val pos = crossfade?.loopPositionMs() ?: exoPlayer.currentPosition
+        // A little ahead of the clock: the notification, lock screen and Now Bar
+        // lag behind a metadata change, so the line is sent early.
+        val pos = (crossfade?.loopPositionMs() ?: exoPlayer.currentPosition) + LYRIC_LEAD_MS
         var carTranslated: String? = null
         val subtitleText = if (lines != null && lines.isNotEmpty() && AppSettings.syncedLyrics.value) {
             val idx = lines.indexOfLast { it.timeMs <= pos }
@@ -8833,7 +8848,7 @@ class PlaybackService : MediaLibraryService() {
         val newCarLine = if (AppSettings.carLyrics.value && playingNow && carConnected()) {
             if (currentLyricLine != null && !carTranslated.isNullOrBlank()) "$currentLyricLine ／ $carTranslated" else currentLyricLine
         } else null
-        val surfacesKey = "${AppSettings.carLyricsOnTitle.value}|${AppSettings.carLyricsTranslation.value}|${AppSettings.phoneLyrics.value}|${AppSettings.phoneLyricsOnTitle.value}"
+        val surfacesKey = "${AppSettings.carLyricsOnTitle.value}|${AppSettings.carLyricsTranslation.value}|${AppSettings.phoneLyrics.value}|${AppSettings.phoneLyricsOnTitle.value}|${AppSettings.phoneLyricsNewline.value}"
         var announce = false
         if (newCarLine != carLyricLine || surfacesKey != lyricSurfacesKey) {
             carLyricLine = newCarLine
@@ -9505,7 +9520,9 @@ class PlaybackService : MediaLibraryService() {
                 // Notification, lock screen and Now Bar have their own switch
                 // and placement, apart from the car's.
                 if (!AppSettings.phoneLyrics.value) return base
-                return carMetadata(base, subtitle.removePrefix("♪ ").trim(), AppSettings.phoneLyricsOnTitle.value)
+                val phoneLine = subtitle.removePrefix("♪ ").trim()
+                if (AppSettings.phoneLyricsNewline.value) return newlineMetadata(base, phoneLine)
+                return carMetadata(base, phoneLine, AppSettings.phoneLyricsOnTitle.value)
             }
             return if (!subtitle.isNullOrBlank()) {
                 base.buildUpon().setSubtitle(subtitle).build()
@@ -11050,3 +11067,6 @@ internal fun lyricsSettingChanges(
 ): Flow<List<Any>> = combine(synced, sources, order, prioritizeSyllableSync) { s, src, o, p ->
     listOf(s, src, o, p)
 }.distinctUntilChanged()
+
+/** How far ahead of playback the outside-the-app lyric line is published, to cover the system's lag. */
+private const val LYRIC_LEAD_MS = 350L

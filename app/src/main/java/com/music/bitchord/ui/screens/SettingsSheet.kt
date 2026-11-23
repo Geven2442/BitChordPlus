@@ -275,6 +275,7 @@ fun SettingsScreen(
     val carLyricsTranslation by AppSettings.carLyricsTranslation.collectAsStateWithLifecycle()
     val phoneLyrics by AppSettings.phoneLyrics.collectAsStateWithLifecycle()
     val phoneLyricsOnTitle by AppSettings.phoneLyricsOnTitle.collectAsStateWithLifecycle()
+    val phoneLyricsNewline by AppSettings.phoneLyricsNewline.collectAsStateWithLifecycle()
     val statusBarLyrics by AppSettings.statusBarLyrics.collectAsStateWithLifecycle()
     val hideLyricsPreview by AppSettings.hideLyricsPreview.collectAsStateWithLifecycle()
     val lyricsSources by AppSettings.lyricsSources.collectAsStateWithLifecycle()
@@ -1477,6 +1478,16 @@ fun SettingsScreen(
                             ),
                             trailing = { IosSwitch(checked = phoneLyricsOnTitle, onCheckedChange = AppSettings::setPhoneLyricsOnTitle) },
                             onClick = { AppSettings.setPhoneLyricsOnTitle(!phoneLyricsOnTitle) },
+                        )
+                    }
+                    val phoneNewlineTitle = stringResource(R.string.phone_lyrics_newline)
+                    row(phoneNewlineTitle, "lyrics", "now bar", "island", "newline") {
+                        SettingsRow(
+                            icon = SfIcons.Language,
+                            title = phoneNewlineTitle,
+                            subtitle = stringResource(R.string.phone_lyrics_newline_subtitle),
+                            trailing = { IosSwitch(checked = phoneLyricsNewline, onCheckedChange = AppSettings::setPhoneLyricsNewline) },
+                            onClick = { AppSettings.setPhoneLyricsNewline(!phoneLyricsNewline) },
                         )
                     }
                 }
