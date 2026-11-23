@@ -2802,6 +2802,13 @@ private fun LyricLine.withoutBracketPunctuation(): LyricLine = copy(
 
 private fun String.stripParens(): String = replace("(", "").replace(")", "").trim()
 
+/**
+ * How many lines the current-lyric strip may wrap to before it ellipsizes. Its
+ * slot in the player is sized for exactly this many, so a long line shows in
+ * full without moving the artwork above it.
+ */
+internal const val STRIP_MAX_LINES = 2
+
 /** The strip's fixed line box — about what Latin type at 16sp makes of itself. */
 private val STRIP_LINE_HEIGHT = 20.sp
 
@@ -2990,7 +2997,7 @@ private fun CurrentLyricLine(
                     clock = clock,
                     style = voiceStyle(stripStyle, text, alignEnd = false, laneLocked = false),
                     dimAlpha = UNSUNG_ALPHA_STRIP,
-                    maxLines = 1,
+                    maxLines = STRIP_MAX_LINES,
                     overflow = TextOverflow.Ellipsis,
                     glowAlpha = if (itemIndex == index) glow else 0f,
                     glowLayerOutset = GLOW_ROOM,
@@ -3010,7 +3017,7 @@ private fun CurrentLyricLine(
                         alignEnd = false,
                         laneLocked = false,
                     ),
-                    maxLines = 1,
+                    maxLines = STRIP_MAX_LINES,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -3184,26 +3191,33 @@ internal fun rememberLyricsTranslation(
         LyricsDisplayMode.Original -> null
     }
     val translationScope = rememberCoroutineScope()
-    val toggleTranslation: () -> Unit = toggleTranslation@{
+    // [auto] is the player restoring what the lyrics were last left showing:
+    // it only ever turns translation on, and says nothing when it can't.
+    val requestTranslation: (Boolean) -> Unit = requestTranslation@{ auto ->
         when (val state = translationState) {
             is LyricsTranslationUiState.Ready -> {
-                lyricsDisplayMode = if (showingTranslation) {
-                    LyricsDisplayMode.Original
-                } else {
+                if (auto && showingTranslation) return@requestTranslation
+                val nowTranslated = auto || !showingTranslation
+                lyricsDisplayMode = if (nowTranslated) {
                     LyricsDisplayMode.Translated
+                } else {
+                    LyricsDisplayMode.Original
                 }
+                if (!auto) PlayerSettings.setLyricsViewMode(if (nowTranslated) "translated" else "")
                 translationTransition++
-                haptics.play(Haptic.Select)
+                if (!auto) haptics.play(Haptic.Select)
             }
             LyricsTranslationUiState.Loading -> Unit
             LyricsTranslationUiState.SameLanguage -> {
-                haptics.play(Haptic.Tap)
-                PlayerPlatform.host.showMessage(alreadyInLanguageMessage)
+                if (!auto) {
+                    haptics.play(Haptic.Tap)
+                    PlayerPlatform.host.showMessage(alreadyInLanguageMessage)
+                }
             }
             LyricsTranslationUiState.Idle -> {
                 val source = lyrics.orEmpty()
-                if (source.isEmpty()) return@toggleTranslation
-                haptics.play(Haptic.Tap)
+                if (source.isEmpty()) return@requestTranslation
+                if (!auto) haptics.play(Haptic.Tap)
                 translationState = LyricsTranslationUiState.Loading
                 romanizationJob?.cancel()
                 if (romanizationState is LyricsTranslationUiState.Loading) {
@@ -3221,42 +3235,48 @@ internal fun rememberLyricsTranslation(
                         is LyricsTranslationResult.Translated -> {
                             translationState = LyricsTranslationUiState.Ready(result.lines)
                             lyricsDisplayMode = LyricsDisplayMode.Translated
+                            PlayerSettings.setLyricsViewMode("translated")
                             translationTransition++
-                            haptics.play(Haptic.ToggleOn)
+                            if (!auto) haptics.play(Haptic.ToggleOn)
                         }
                         is LyricsTranslationResult.SameLanguage -> {
                             translationState = LyricsTranslationUiState.SameLanguage
-                            PlayerPlatform.host.showMessage(alreadyInLanguageMessage)
+                            if (!auto) PlayerPlatform.host.showMessage(alreadyInLanguageMessage)
                         }
                         LyricsTranslationResult.Unavailable -> {
                             translationState = LyricsTranslationUiState.Idle
-                            PlayerPlatform.host.showMessage(translationUnavailableMessage)
+                            if (!auto) PlayerPlatform.host.showMessage(translationUnavailableMessage)
                         }
                     }
                 }
             }
         }
     }
-    val toggleRomanization: () -> Unit = toggleRomanization@{
+    val requestRomanization: (Boolean) -> Unit = requestRomanization@{ auto ->
         when (val state = romanizationState) {
             is LyricsTranslationUiState.Ready -> {
-                lyricsDisplayMode = if (showingRomanization) {
-                    LyricsDisplayMode.Original
-                } else {
+                if (auto && showingRomanization) return@requestRomanization
+                val nowRomanized = auto || !showingRomanization
+                lyricsDisplayMode = if (nowRomanized) {
                     LyricsDisplayMode.Romanized
+                } else {
+                    LyricsDisplayMode.Original
                 }
+                if (!auto) PlayerSettings.setLyricsViewMode(if (nowRomanized) "romanized" else "")
                 translationTransition++
-                haptics.play(Haptic.Select)
+                if (!auto) haptics.play(Haptic.Select)
             }
             LyricsTranslationUiState.Loading -> Unit
             LyricsTranslationUiState.SameLanguage -> {
-                haptics.play(Haptic.Tap)
-                PlayerPlatform.host.showMessage(alreadyRomanizedMessage)
+                if (!auto) {
+                    haptics.play(Haptic.Tap)
+                    PlayerPlatform.host.showMessage(alreadyRomanizedMessage)
+                }
             }
             LyricsTranslationUiState.Idle -> {
                 val source = lyrics.orEmpty()
-                if (source.isEmpty()) return@toggleRomanization
-                haptics.play(Haptic.Tap)
+                if (source.isEmpty()) return@requestRomanization
+                if (!auto) haptics.play(Haptic.Tap)
                 romanizationState = LyricsTranslationUiState.Loading
                 translationJob?.cancel()
                 if (translationState is LyricsTranslationUiState.Loading) {
@@ -3274,20 +3294,34 @@ internal fun rememberLyricsTranslation(
                         is LyricsRomanizationResult.Romanized -> {
                             romanizationState = LyricsTranslationUiState.Ready(result.lines)
                             lyricsDisplayMode = LyricsDisplayMode.Romanized
+                            PlayerSettings.setLyricsViewMode("romanized")
                             translationTransition++
-                            haptics.play(Haptic.ToggleOn)
+                            if (!auto) haptics.play(Haptic.ToggleOn)
                         }
                         LyricsRomanizationResult.AlreadyRomanized -> {
                             romanizationState = LyricsTranslationUiState.SameLanguage
-                            PlayerPlatform.host.showMessage(alreadyRomanizedMessage)
+                            if (!auto) PlayerPlatform.host.showMessage(alreadyRomanizedMessage)
                         }
                         LyricsRomanizationResult.Unavailable -> {
                             romanizationState = LyricsTranslationUiState.Idle
-                            PlayerPlatform.host.showMessage(romanizationUnavailableMessage)
+                            if (!auto) PlayerPlatform.host.showMessage(romanizationUnavailableMessage)
                         }
                     }
                 }
             }
+        }
+    }
+    val toggleTranslation: () -> Unit = { requestTranslation(false) }
+    val toggleRomanization: () -> Unit = { requestRomanization(false) }
+    // Each new song starts the way the lyrics were last left: translated or
+    // romanized if they were, original if not — so listening to a run of
+    // foreign songs needs the switch once, not once per song.
+    val savedViewMode by PlayerSettings.lyricsViewMode.collectAsStateWithLifecycle()
+    LaunchedEffect(trackId, translationLanguage, lyrics) {
+        if (lyrics.isNullOrEmpty()) return@LaunchedEffect
+        when (savedViewMode) {
+            "translated" -> requestTranslation(true)
+            "romanized" -> requestRomanization(true)
         }
     }
     // The one line that sits above the scrubber while the lyrics are open: which

@@ -1038,7 +1038,7 @@ fun NowPlayingScreen(
     // own line box — and the 4dp each of them is padded by above and below.
     val lyricSlotHeight = with(density) {
         MaterialTheme.typography.titleMedium.lineHeight.takeIf { it.isSpecified }?.toDp() ?: 24.dp
-    } + 8.dp
+    } * STRIP_MAX_LINES + 8.dp
     val hideSongStatus by PlayerSettings.hideSongStatus.collectAsStateWithLifecycle()
 
     // Animated cover art: the looping video some labels publish alongside a
@@ -2546,6 +2546,10 @@ fun NowPlayingScreen(
                             },
                             lyricStrip = if (syncedLyricsEnabled && !hideLyricsPreview) {
                                 {
+                                  Box(
+                                    modifier = Modifier.fillMaxWidth().height(lyricSlotHeight),
+                                    contentAlignment = Alignment.CenterStart,
+                                  ) {
                                     CurrentLyricStrip(
                                         lines = lyricsTranslation.displayedLyrics,
                                         trackKey = song.videoId,
@@ -2556,6 +2560,7 @@ fun NowPlayingScreen(
                                         loadingText = lyricsLoadingText,
                                         onClick = openLyrics,
                                     )
+                                  }
                                 }
                             } else {
                                 null

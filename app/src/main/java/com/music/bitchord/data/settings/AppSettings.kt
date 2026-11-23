@@ -564,6 +564,9 @@ object AppSettings {
     /** Positive values delay synced lyrics; negative values bring them forward. */
     val lyricsOffsetMs = MutableStateFlow(0)
 
+    /** What the lyrics were last left showing: "translated", "romanized" or "" (original). */
+    val lyricsViewMode = MutableStateFlow("")
+
     /**
      * Which language the lyrics translate button translates *into*.
      *
@@ -1165,6 +1168,7 @@ object AppSettings {
         lyricsBlur.value = prefs.getBoolean(KEY_LYRICS_BLUR, true)
         lyricsOffsetMs.value = prefs.getInt(KEY_LYRICS_OFFSET_MS, 0)
             .coerceIn(MIN_LYRICS_OFFSET_MS, MAX_LYRICS_OFFSET_MS)
+        lyricsViewMode.value = prefs.getString(KEY_LYRICS_VIEW_MODE, "").orEmpty()
         translationLanguage.value = prefs.getString(KEY_TRANSLATION_LANGUAGE, "").orEmpty()
         if (highPerformanceMode.value) {
             reduceAnimation.value = false
@@ -1781,6 +1785,12 @@ object AppSettings {
     fun setKeepQueuedOnNewPlay(value: Boolean) {
         keepQueuedOnNewPlay.value = value
         prefs.edit().putBoolean(KEY_KEEP_QUEUED_ON_NEW_PLAY, value).apply()
+    }
+
+    fun setLyricsViewMode(value: String) {
+        if (lyricsViewMode.value == value) return
+        lyricsViewMode.value = value
+        prefs.edit().putString(KEY_LYRICS_VIEW_MODE, value).apply()
     }
 
     fun setCarLyricsOnTitle(value: Boolean) {
@@ -2563,6 +2573,7 @@ object AppSettings {
     private const val KEY_PROGRESSIVE_BLUR = "progressive_blur"
     private const val KEY_LYRICS_BLUR = "lyrics_blur"
     private const val KEY_LYRICS_OFFSET_MS = "lyrics_offset_ms"
+    private const val KEY_LYRICS_VIEW_MODE = "lyrics_view_mode"
     private const val KEY_TRANSLATION_LANGUAGE = "translation_language"
     private const val KEY_ANIMATED_CANVAS = "animated_canvas"
     private const val KEY_CANVAS_OVER_CELLULAR = "canvas_over_cellular"

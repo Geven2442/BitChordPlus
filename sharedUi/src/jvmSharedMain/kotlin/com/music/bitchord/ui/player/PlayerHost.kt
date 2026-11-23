@@ -318,10 +318,13 @@ interface PlayerSettingsSource {
     val spotifyCanvasAutoHide: StateFlow<Boolean>
     val syncedLyrics: StateFlow<Boolean>
     val translationLanguage: StateFlow<String>
+    /** What the lyrics were last left showing: "translated", "romanized" or "" (original). */
+    val lyricsViewMode: StateFlow<String> get() = MutableStateFlow("")
     val versionAlignmentInProgress: StateFlow<Boolean>
 
     fun setLastPlayerScreen(value: LastPlayerScreen)
     fun setLyricsOffsetMs(value: Int)
+    fun setLyricsViewMode(value: String) {}
     /** Whether the mix popup is up, so the host lays out [smartMixPreview] for it. */
     fun setMixViewOpen(open: Boolean)
 }

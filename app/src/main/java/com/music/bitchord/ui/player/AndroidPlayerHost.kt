@@ -116,10 +116,12 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
         override val spotifyCanvasAutoHide get() = AppSettings.effectiveSpotifyCanvasAutoHide
         override val syncedLyrics get() = AppSettings.syncedLyrics
         override val translationLanguage get() = AppSettings.translationLanguage
+        override val lyricsViewMode get() = AppSettings.lyricsViewMode
         override val versionAlignmentInProgress get() = AppSettings.versionAlignmentInProgress
 
         override fun setLastPlayerScreen(value: LastPlayerScreen) = AppSettings.setLastPlayerScreen(value)
         override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value)
+        override fun setLyricsViewMode(value: String) = AppSettings.setLyricsViewMode(value)
         override fun setMixViewOpen(open: Boolean) {
             AppSettings.mixViewOpen.value = open
         }
