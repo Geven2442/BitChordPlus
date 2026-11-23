@@ -2099,15 +2099,19 @@ fun SettingsScreen(
         if (section == null && searchQuery.isBlank()) {
         Text(
             text = buildAnnotatedString {
-                append("bitchord $version  ")
+                append("bitchord+ $version  ")
                 val linkStyles = TextLinkStyles(
                     style = SpanStyle(
                         color = MaterialTheme.colorScheme.primary,
                         textDecoration = TextDecoration.Underline,
                     ),
                 )
-                withLink(LinkAnnotation.Url("https://github.com/kushagrasinghx/BitChord", linkStyles)) {
+                withLink(LinkAnnotation.Url("https://github.com/Geven2442/BitChordPlus", linkStyles)) {
                     append("GitHub")
+                }
+                append("  ")
+                withLink(LinkAnnotation.Url("https://github.com/kushagrasinghx/BitChord", linkStyles)) {
+                    append("Original")
                 }
                 append("  ")
                 withLink(LinkAnnotation.Url("https://github.com/kushagrasinghx", linkStyles)) {
@@ -2121,6 +2125,7 @@ fun SettingsScreen(
                 withLink(LinkAnnotation.Url("https://bitchord.kushagrasingh.in/", linkStyles)) {
                     append("Website")
                 }
+                append("\nFork of BitChord by kushagrasinghx (GitHub = this fork, Original = upstream)")
                 append("\n~YouTube Music & Listen Together Backend")
             },
             style = MaterialTheme.typography.labelSmall,
