@@ -8838,8 +8838,17 @@ class PlaybackService : MediaLibraryService() {
             // the notification or the Now Bar: tell them the line changed.
             announce = true
         }
-        if (announce) (mediaSession?.player as? SessionPlayer)?.announceMetadataChanged()
+        // Screen off and no car: nothing shows the line, so skip the
+        // notification / lock-screen / Now Bar refresh and save the battery.
+        // The next line (a few seconds on) refreshes them once the screen is on.
+        if (announce && (isScreenOn() || carConnected())) {
+            (mediaSession?.player as? SessionPlayer)?.announceMetadataChanged()
+        }
     }
+
+    private fun isScreenOn(): Boolean =
+        runCatching { getSystemService(android.os.PowerManager::class.java)?.isInteractive ?: true }
+            .getOrDefault(true)
 
     /**
      * What the MediaSession, and so every control surface, actually talks to.

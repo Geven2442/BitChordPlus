@@ -1548,4 +1548,7 @@
     <string name="lyrics_on_title_subtitle">First line is the lyric, second line is \"title · artist\"</string>
     <string name="lyrics_after_title_subtitle">First line is \"title · artist\", second line is the lyric</string>
     <string name="car_lyrics_on_title">Lyric on the title line (car)</string>
+    <string name="update_channel_name">App updates</string>
+    <string name="update_notification_title">BitChord+ update available</string>
+    <string name="update_notification_text">Version %1$s is ready. Tap to update.</string>
 </resources>
