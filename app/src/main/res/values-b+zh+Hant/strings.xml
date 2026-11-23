@@ -1559,6 +1559,9 @@
     <string name="phone_lyrics_newline">歌詞換行顯示（實驗）</string>
     <string name="phone_lyrics_newline_subtitle">歌名與歌手排一行，歌詞換到下一行；給動態島／Now Bar 這種只合併成一行的樣式使用，不同機型效果可能不同</string>
     <string name="show_less">收合</string>
+    <string name="all_songs">All songs</string>
     <string name="lyrics_when_screen_off">息屏時也更新歌詞</string>
     <string name="lyrics_when_screen_off_subtitle">關螢幕（含息屏顯示）時，鎖定畫面和通知上的歌詞仍會繼續更新；會多耗一點電</string>
+    <string name="lyric_lead">歌詞提前量</string>
+    <string name="lyric_lead_subtitle">通知、鎖定畫面和 Now Bar 的歌詞比歌聲慢時，把數值調大；跑到歌聲前面就調小。預設 350 ms。</string>
 </resources>

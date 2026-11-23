@@ -44,6 +44,12 @@ sealed interface AppRoute {
      */
     data class ArtistShelf(val browseId: String, val shelf: HomeShelf) : AppRoute
 
+    /**
+     * An artist page's "Show all" for its songs: every track in one list, drawn
+     * by the artist page itself like [ArtistShelf], so back returns to the page.
+     */
+    data class ArtistSongs(val browseId: String) : AppRoute
+
     /** Find Your Mood's Show all: every mood and activity, as a grid. */
     data object Moods : AppRoute
 

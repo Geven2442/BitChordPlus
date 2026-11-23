@@ -8803,7 +8803,7 @@ class PlaybackService : MediaLibraryService() {
     private fun nextLyricDelayMs(): Long {
         val lines = serviceLyrics ?: return 500L
         val exoPlayer = player ?: return 500L
-        val pos = (crossfade?.loopPositionMs() ?: exoPlayer.currentPosition) + LYRIC_LEAD_MS
+        val pos = (crossfade?.loopPositionMs() ?: exoPlayer.currentPosition) + AppSettings.lyricLeadMs.value
         val next = lines.firstOrNull { it.timeMs > pos } ?: return 500L
         val speed = exoPlayer.playbackParameters.speed.coerceAtLeast(0.1f)
         return ((next.timeMs - pos) / speed).toLong().coerceIn(40L, 500L)
@@ -8821,7 +8821,7 @@ class PlaybackService : MediaLibraryService() {
         val lines = serviceLyrics
         // A little ahead of the clock: the notification, lock screen and Now Bar
         // lag behind a metadata change, so the line is sent early.
-        val pos = (crossfade?.loopPositionMs() ?: exoPlayer.currentPosition) + LYRIC_LEAD_MS
+        val pos = (crossfade?.loopPositionMs() ?: exoPlayer.currentPosition) + AppSettings.lyricLeadMs.value
         var carTranslated: String? = null
         val subtitleText = if (lines != null && lines.isNotEmpty() && AppSettings.syncedLyrics.value) {
             val idx = lines.indexOfLast { it.timeMs <= pos }
@@ -11069,4 +11069,3 @@ internal fun lyricsSettingChanges(
 }.distinctUntilChanged()
 
 /** How far ahead of playback the outside-the-app lyric line is published, to cover the system's lag. */
-private const val LYRIC_LEAD_MS = 350L

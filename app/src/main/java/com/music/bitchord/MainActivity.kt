@@ -857,8 +857,10 @@ private fun BitChordApp(
     // An artist's open shelf is drawn by the artist page itself, so it is not a
     // route the page area switches to — only the shelf the page is showing.
     val artistShelfRoute = topEntry?.route as? AppRoute.ArtistShelf
-    val visibleEntry = topEntry?.takeIf { artistShelfRoute == null }
+    val artistSongsRoute = topEntry?.route as? AppRoute.ArtistSongs
+    val visibleEntry = topEntry?.takeIf { artistShelfRoute == null && artistSongsRoute == null }
     val detailActiveShelf = artistShelfRoute?.shelf
+    val detailShowSongs = artistSongsRoute != null
     /** The route on screen, or null when a release page or a tab is. */
     val route = visibleEntry?.route
     /**
@@ -3463,6 +3465,11 @@ private fun BitChordApp(
                                 isPlaying = player.isPlaying,
                                 listState = pageDetailListState,
                                 activeShelf = detailActiveShelf,
+                                showAllSongs = detailShowSongs,
+                                onShowAllSongsChange = { open ->
+                                    if (open) navigator.push(AppRoute.ArtistSongs(page.browseId))
+                                    else navigator.pop()
+                                },
                                 onActiveShelfChange = { shelf ->
                                     if (shelf != null) navigator.push(AppRoute.ArtistShelf(page.browseId, shelf))
                                     else navigator.pop()
@@ -4011,6 +4018,7 @@ private fun BitChordApp(
                         AppRoute.History -> stringResource(R.string.history)
                         is AppRoute.LibraryShowAll -> route.shelf.title
                         is AppRoute.ArtistShelf -> route.shelf.title
+                        is AppRoute.ArtistSongs -> stringResource(R.string.all_songs)
                         AppRoute.Moods -> stringResource(R.string.find_your_mood)
                         AppRoute.AccountScrobbling -> stringResource(R.string.account_scrobbling)
                         AppRoute.Sources -> stringResource(R.string.sources)
@@ -4026,6 +4034,7 @@ private fun BitChordApp(
                         AppRoute.Replay -> stringResource(R.string.replay)
                         null -> when {
                             detail != null && detailActiveShelf != null -> detailActiveShelf?.title.orEmpty()
+                            detail != null && detailShowSongs -> stringResource(R.string.all_songs)
                             detail != null -> detail.title
                             selectedMoodGenre != null -> selectedMoodGenre?.title.orEmpty()
                             else -> tabs[selectedTab].let {
@@ -4038,7 +4047,7 @@ private fun BitChordApp(
                     transparentBackdrop = true,
                     artworkPageChrome = true,
                     backButtonHazeState = hazeState,
-                    trailingTitle = if (detail != null && detailActiveShelf != null) detail.title else null,
+                    trailingTitle = if (detail != null && (detailActiveShelf != null || detailShowSongs)) detail.title else null,
                     // Search has no large in-list header to hand the title back to —
                     // the field takes that space — so its bar title is always up.
                     scrolled = {
@@ -4047,7 +4056,7 @@ private fun BitChordApp(
                             // stays out of the way until that has been scrolled off.
                             route == AppRoute.Replay -> replayScrolled
                             route != null -> true
-                            detail != null && detailActiveShelf != null -> true
+                            detail != null && (detailActiveShelf != null || detailShowSongs) -> true
                             detail != null -> detailScrolled
                             selectedMoodGenre != null -> true
                             else -> scrolled || selectedTab == TAB_SEARCH
@@ -4235,7 +4244,17 @@ private fun BitChordApp(
                             // "…" pair do on Apple Music's album page: the header
                             // below is left with just the sleeve, the title and
                             // Shuffle / Play / Add.
-                            if ((isReleaseDetail || isLocalDetail) && detail != null) {
+                            if (detail != null && detailShowSongs && !isLocalDetail) {
+                                // An artist's whole song list: sorted with the same menu
+                                // a playlist uses, remembered per artist.
+                                IconButton(onClick = { songSortMenuOpen = true }) {
+                                    Icon(
+                                        Icons.Rounded.Sort,
+                                        contentDescription = stringResource(R.string.sort_songs),
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            } else if ((isReleaseDetail || isLocalDetail) && detail != null) {
                                 val releaseSongs = (detail.songs as? UiState.Success)?.data.orEmpty()
                                 if (releaseSongs.isNotEmpty()) {
                                     IconButton(onClick = { detailSearching = !detailSearching }) {
@@ -4305,7 +4324,7 @@ private fun BitChordApp(
                             // share glyph, sending the artist's channel link — the
                             // one YouTube Music itself shares for an artist.
                             if (detail != null && !isLocalDetail && detail.type == BrowseType.ARTIST &&
-                                detailActiveShelf == null && detail.browseId.startsWith("UC")
+                                detailActiveShelf == null && !detailShowSongs && detail.browseId.startsWith("UC")
                             ) {
                                 IconButton(
                                     onClick = {

@@ -318,6 +318,9 @@ fun DetailScreen(
     listState: LazyListState = rememberLazyListState(),
     activeShelf: HomeShelf? = null,
     onActiveShelfChange: (HomeShelf?) -> Unit = {},
+    /** An artist's whole song list, open as a page of its own. */
+    showAllSongs: Boolean = false,
+    onShowAllSongsChange: (Boolean) -> Unit = {},
     /**
      * Holding one of the album cards on an artist page — the same menu the
      * shelves on every other tab open, so a release can be queued from
@@ -377,7 +380,11 @@ fun DetailScreen(
     // than the per-page one a release takes.
     val folderSort = folder?.sort
     val songs = remember(rawSongs, songSort, folderSort) {
-        if (folderSort != null) rawSongs.sortedForLibrary(folderSort) else rawSongs.sortedForDetail(songSort)
+        // An artist's own sort belongs to its whole-song page alone, so Play and
+        // the Top songs pager keep the order the artist page came in.
+        if (folderSort != null) rawSongs.sortedForLibrary(folderSort)
+        else if (page.type == BrowseType.ARTIST) rawSongs
+        else rawSongs.sortedForDetail(songSort)
     }
     // What a numbered row shows regardless of [songSort] — an album's track
     // numbers are the sleeve's own and must not relabel themselves to match
@@ -449,10 +456,6 @@ fun DetailScreen(
     // on an album that was closed and reopened would be a page that appears to
     // have lost most of its tracks.
     var query by rememberSaveable(page.browseId) { mutableStateOf("") }
-    // An artist's songs show twenty in a sideways pager; this swaps it for the
-    // whole list, in rows, so a song past the twentieth can be found by scrolling
-    // or by the search box rather than only by typing its name elsewhere.
-    var showAllSongs by rememberSaveable(page.browseId) { mutableStateOf(false) }
     // Whether the field still owes the keyboard an appearance. Held here rather
     // than in the field, which is a row in a lazy list: scrolled out of sight it
     // is disposed, and a field that asks for focus every time it is composed
@@ -540,14 +543,15 @@ fun DetailScreen(
     }
 
     AnimatedContent(
-        targetState = activeShelf,
+        targetState = activeShelf ?: ArtistSongsPageKey.takeIf { showAllSongs && isArtist },
         transitionSpec = {
             fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(180))
         },
         label = "artist_shelf_transition",
         modifier = modifier.fillMaxSize(),
-    ) { targetShelf ->
-        if (targetShelf == null) {
+    ) { target ->
+        val targetShelf = target as? HomeShelf
+        if (target == null) {
             // An artist's photograph dissolves into [ArtworkPalette.wash]; a
             // release's sleeve sits framed on one flat colour with nothing to
             // dissolve, so it takes the same [ArtworkPalette.background] the
@@ -732,7 +736,7 @@ fun DetailScreen(
                         onSongLongPress = onSongLongPress,
                         onSongSwipe = onSongSwipe,
                     )
-                } else if (isArtist && !showAllSongs) {
+                } else if (isArtist) {
                     // An artist's full song list would bury the album shelves, so
                     // it pages sideways four at a time and stops at twenty.
                     item {
@@ -741,7 +745,7 @@ fun DetailScreen(
                         SectionHeading(
                             title = stringResource(R.string.top_songs),
                             palette = palette,
-                            onShowAll = if (state.data.size > SONGS_PER_COLUMN) { { showAllSongs = true } } else null,
+                            onShowAll = if (state.data.size > SONGS_PER_COLUMN) { { onShowAllSongsChange(true) } } else null,
                             horizontalPadding = ARTIST_CONTENT_GUTTER,
                         )
                         BoxWithConstraints {
@@ -775,17 +779,6 @@ fun DetailScreen(
                     // Every row on an album carries the same sleeve, which is
                     // already the largest thing on the page — Apple Music
                     // numbers those rows instead, and so does this.
-                    if (isArtist) {
-                        item(key = "all-songs-heading") {
-                            SectionHeading(
-                                title = stringResource(R.string.top_songs),
-                                palette = palette,
-                                onShowAll = { showAllSongs = false },
-                                showAllLabel = stringResource(R.string.show_less),
-                                horizontalPadding = ARTIST_CONTENT_GUTTER,
-                            )
-                        }
-                    }
                     val numbered = page.type == BrowseType.ALBUM
                     val isCurrentRow = playingRowMatcher(matches.map { it.value }, currentSong)
                     if (matches.isEmpty() && state.data.isNotEmpty()) {
@@ -912,6 +905,20 @@ fun DetailScreen(
                 }
 
     }
+} else if (targetShelf == null) {
+    val sortedSongs = remember(rawSongs, songSort) { rawSongs.sortedForDetail(songSort) }
+    ArtistSongsPage(
+        songs = sortedSongs,
+        fallbackThumbnail = page.thumbnailUrl,
+        palette = palette,
+        currentSong = currentSong,
+        isPlaying = isPlaying,
+        downloadedTint = downloadedTint,
+        onSongClick = onSongClick,
+        onSongLongPress = onSongLongPress,
+        onSongSwipe = onSongSwipe,
+        contentPadding = contentPadding,
+    )
 } else {
     ArtistShelfGridPage(
         shelf = targetShelf,
@@ -2431,6 +2438,58 @@ private fun SectionCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+/** Stands in for the artist's whole song list as the page the artist screen is showing. */
+private object ArtistSongsPageKey
+
+/** Every song of an artist, one row each, on a page of its own. */
+@Composable
+private fun ArtistSongsPage(
+    songs: List<Song>,
+    fallbackThumbnail: String?,
+    palette: ArtworkPalette,
+    currentSong: Song?,
+    isPlaying: Boolean,
+    downloadedTint: Color?,
+    onSongClick: (List<Song>, Int) -> Unit,
+    onSongLongPress: (Song) -> Unit,
+    onSongSwipe: (Song) -> Unit,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+) {
+    val isCurrentRow = playingRowMatcher(songs, currentSong)
+    LazyColumn(
+        modifier = modifier.fillMaxSize().background(palette.background),
+        contentPadding = PaddingValues(
+            top = topBarContentPadding(),
+            bottom = contentPadding.calculateBottomPadding() + 16.dp,
+        ),
+    ) {
+        itemsIndexed(songs, key = { index, song -> "all_${index}_${song.videoId}" }) { index, song ->
+            val isCurrent = isCurrentRow(song)
+            SongRow(
+                song = song.copy(thumbnailUrl = song.thumbnailUrl ?: fallbackThumbnail),
+                onClick = { onSongClick(songs, index) },
+                onLongPress = { onSongLongPress(song) },
+                onSwipeToQueue = { onSongSwipe(song) },
+                rowBackground = Color.Transparent,
+                subtitleColor = palette.onBackgroundVariant,
+                downloadedTint = downloadedTint,
+                isCurrent = isCurrent,
+                isPlaying = isCurrent && isPlaying,
+                activeTint = palette.accent,
+                searchPlayingStyle = true,
+            )
+            if (index < songs.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = ROW_DIVIDER_INSET),
+                    thickness = 0.5.dp,
+                    color = palette.divider,
+                )
+            }
+        }
     }
 }
 

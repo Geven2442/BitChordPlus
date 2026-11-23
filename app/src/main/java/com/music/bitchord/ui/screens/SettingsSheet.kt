@@ -277,6 +277,7 @@ fun SettingsScreen(
     val phoneLyricsOnTitle by AppSettings.phoneLyricsOnTitle.collectAsStateWithLifecycle()
     val phoneLyricsNewline by AppSettings.phoneLyricsNewline.collectAsStateWithLifecycle()
     val lyricsWhenScreenOff by AppSettings.lyricsWhenScreenOff.collectAsStateWithLifecycle()
+    val lyricLeadMs by AppSettings.lyricLeadMs.collectAsStateWithLifecycle()
     val statusBarLyrics by AppSettings.statusBarLyrics.collectAsStateWithLifecycle()
     val hideLyricsPreview by AppSettings.hideLyricsPreview.collectAsStateWithLifecycle()
     val lyricsSources by AppSettings.lyricsSources.collectAsStateWithLifecycle()
@@ -1499,6 +1500,19 @@ fun SettingsScreen(
                             subtitle = stringResource(R.string.lyrics_when_screen_off_subtitle),
                             trailing = { IosSwitch(checked = lyricsWhenScreenOff, onCheckedChange = AppSettings::setLyricsWhenScreenOff) },
                             onClick = { AppSettings.setLyricsWhenScreenOff(!lyricsWhenScreenOff) },
+                        )
+                    }
+                    val leadTitle = stringResource(R.string.lyric_lead)
+                    row(leadTitle, "lyrics", "lead", "delay", "latency", "early") {
+                        SliderRow(
+                            icon = SfIcons.Language,
+                            title = leadTitle,
+                            subtitle = stringResource(R.string.lyric_lead_subtitle),
+                            value = "${lyricLeadMs} ms",
+                            sliderValue = lyricLeadMs.toFloat(),
+                            onSliderValue = { AppSettings.setLyricLeadMs((it / 50f).roundToInt() * 50) },
+                            valueRange = 0f..AppSettings.MAX_LYRIC_LEAD_MS.toFloat(),
+                            steps = AppSettings.MAX_LYRIC_LEAD_MS / 50 - 1,
                         )
                     }
                 }

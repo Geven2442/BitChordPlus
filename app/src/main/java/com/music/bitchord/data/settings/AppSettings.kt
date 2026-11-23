@@ -690,6 +690,8 @@ object AppSettings {
 
     /** Keep refreshing the notification / lock screen lyric while the screen is off (costs battery). */
     val lyricsWhenScreenOff = MutableStateFlow(false)
+    /** How far ahead of the playback clock the notification / lock-screen lyric is sent, in ms. */
+    val lyricLeadMs = MutableStateFlow(DEFAULT_LYRIC_LEAD_MS)
     /** Upstream BitChord's queue: songs played from "play next" are removed instead of kept as history. */
     val originalQueueLogic = MutableStateFlow(false)
     /** Starting a new playlist/album keeps songs queued with "play next" that haven't played yet. */
@@ -1205,6 +1207,7 @@ object AppSettings {
         carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
         phoneLyricsNewline.value = prefs.getBoolean(KEY_PHONE_LYRICS_NEWLINE, false)
         lyricsWhenScreenOff.value = prefs.getBoolean(KEY_LYRICS_WHEN_SCREEN_OFF, false)
+        lyricLeadMs.value = prefs.getInt(KEY_LYRIC_LEAD_MS, DEFAULT_LYRIC_LEAD_MS).coerceIn(0, MAX_LYRIC_LEAD_MS)
         originalQueueLogic.value = prefs.getBoolean(KEY_ORIGINAL_QUEUE_LOGIC, false)
         keepQueuedOnNewPlay.value = prefs.getBoolean(KEY_KEEP_QUEUED_ON_NEW_PLAY, true)
         phoneLyrics.value = prefs.getBoolean(KEY_PHONE_LYRICS, true)
@@ -1769,6 +1772,12 @@ object AppSettings {
     fun setPhoneLyricsOnTitle(value: Boolean) {
         phoneLyricsOnTitle.value = value
         prefs.edit().putBoolean(KEY_PHONE_LYRICS_ON_TITLE, value).apply()
+    }
+
+    fun setLyricLeadMs(value: Int) {
+        val v = value.coerceIn(0, MAX_LYRIC_LEAD_MS)
+        lyricLeadMs.value = v
+        prefs.edit().putInt(KEY_LYRIC_LEAD_MS, v).apply()
     }
 
     fun setLyricsWhenScreenOff(value: Boolean) {
@@ -2603,6 +2612,9 @@ object AppSettings {
     private const val KEY_CAR_LYRICS_TRANSLATION = "car_lyrics_translation"
     private const val KEY_PHONE_LYRICS_NEWLINE = "phone_lyrics_newline"
     private const val KEY_LYRICS_WHEN_SCREEN_OFF = "lyrics_when_screen_off"
+    private const val KEY_LYRIC_LEAD_MS = "lyric_lead_ms"
+    const val DEFAULT_LYRIC_LEAD_MS = 350
+    const val MAX_LYRIC_LEAD_MS = 1500
     private const val KEY_ORIGINAL_QUEUE_LOGIC = "original_queue_logic"
     private const val KEY_KEEP_QUEUED_ON_NEW_PLAY = "keep_queued_on_new_play"
     private const val KEY_PHONE_LYRICS = "phone_lyrics"

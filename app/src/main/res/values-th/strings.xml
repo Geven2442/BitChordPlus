@@ -1565,6 +1565,9 @@
     <string name="phone_lyrics_newline">Lyric on its own line (experimental)</string>
     <string name="phone_lyrics_newline_subtitle">Title and artist on one line, the lyric on the next; for styles like the Now Bar that merge them into one line. May look different per phone</string>
     <string name="show_less">Show less</string>
+    <string name="all_songs">All songs</string>
     <string name="lyrics_when_screen_off">Update lyrics with screen off</string>
     <string name="lyrics_when_screen_off_subtitle">Keep the lock screen and notification lyric moving while the screen is off or on Always On Display. Uses a little more battery</string>
+    <string name="lyric_lead">Lyric lead</string>
+    <string name="lyric_lead_subtitle">Raise it if the notification / lock-screen lyric shows up after the singing; lower it if it runs ahead. Default 350 ms.</string>
 </resources>
