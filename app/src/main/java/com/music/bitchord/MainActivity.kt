@@ -2525,9 +2525,16 @@ private fun BitChordApp(
     // under the status bar inset, and that inset varies by device and by window,
     // so a fixed number only ever lines up on the one device it was picked on.
     // See [topBarContentPadding].
+    // The bars' real height, measured while no notice is stacked on them, so the
+    // last row stops just above the bars instead of a fixed 210 dp that is far
+    // more than the single docked bar needs. Only ever grows (per song / no song),
+    // so the bars folding away on scroll can't make the list jump. Until measured, the old figures.
+    val barsInsetPx = remember(player.song != null) { mutableIntStateOf(0) }
+    val barsInsetDp = with(LocalDensity.current) { barsInsetPx.intValue.toDp() }
     val listPadding = PaddingValues(
         top = topBarContentPadding(),
-        bottom = if (player.song != null) 210.dp else 140.dp,
+        bottom = if (barsInsetPx.intValue > 0) barsInsetDp + 16.dp
+        else if (player.song != null) 210.dp else 140.dp,
     )
 
     // What colour the page currently under the bars is. The fades either end
@@ -4399,7 +4406,10 @@ private fun BitChordApp(
                         .align(Alignment.BottomCenter)
                         .widthIn(max = FLOATING_BAR_MAX_WIDTH)
                         .fillMaxWidth()
-                        .onSizeChanged { floatingBarsHeight.intValue = it.height },
+                        .onSizeChanged {
+                            floatingBarsHeight.intValue = it.height
+                            if (queueNotice == null && it.height > barsInsetPx.intValue) barsInsetPx.intValue = it.height
+                        },
                 ) {
                     QueueActionNoticeHost(queueNotice, hazeState = hazeState, matchBar = true, liquidGlass = true)
                     // Liquid glass replaces the two stacked bars with the single
@@ -4444,7 +4454,10 @@ private fun BitChordApp(
                         // already been bounded by the time it is applied.
                         .widthIn(max = FLOATING_BAR_MAX_WIDTH)
                         .fillMaxWidth()
-                        .onSizeChanged { floatingBarsHeight.intValue = it.height },
+                        .onSizeChanged {
+                            floatingBarsHeight.intValue = it.height
+                            if (queueNotice == null && it.height > barsInsetPx.intValue) barsInsetPx.intValue = it.height
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     QueueActionNoticeHost(queueNotice, hazeState = hazeState, matchBar = true)
