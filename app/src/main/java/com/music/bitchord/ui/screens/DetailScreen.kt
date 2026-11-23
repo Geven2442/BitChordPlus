@@ -449,6 +449,10 @@ fun DetailScreen(
     // on an album that was closed and reopened would be a page that appears to
     // have lost most of its tracks.
     var query by rememberSaveable(page.browseId) { mutableStateOf("") }
+    // An artist's songs show twenty in a sideways pager; this swaps it for the
+    // whole list, in rows, so a song past the twentieth can be found by scrolling
+    // or by the search box rather than only by typing its name elsewhere.
+    var showAllSongs by rememberSaveable(page.browseId) { mutableStateOf(false) }
     // Whether the field still owes the keyboard an appearance. Held here rather
     // than in the field, which is a row in a lazy list: scrolled out of sight it
     // is disposed, and a field that asks for focus every time it is composed
@@ -728,7 +732,7 @@ fun DetailScreen(
                         onSongLongPress = onSongLongPress,
                         onSongSwipe = onSongSwipe,
                     )
-                } else if (isArtist) {
+                } else if (isArtist && !showAllSongs) {
                     // An artist's full song list would bury the album shelves, so
                     // it pages sideways four at a time and stops at twenty.
                     item {
@@ -737,6 +741,7 @@ fun DetailScreen(
                         SectionHeading(
                             title = stringResource(R.string.top_songs),
                             palette = palette,
+                            onShowAll = if (state.data.size > SONGS_PER_COLUMN) { { showAllSongs = true } } else null,
                             horizontalPadding = ARTIST_CONTENT_GUTTER,
                         )
                         BoxWithConstraints {
@@ -770,6 +775,17 @@ fun DetailScreen(
                     // Every row on an album carries the same sleeve, which is
                     // already the largest thing on the page — Apple Music
                     // numbers those rows instead, and so does this.
+                    if (isArtist) {
+                        item(key = "all-songs-heading") {
+                            SectionHeading(
+                                title = stringResource(R.string.top_songs),
+                                palette = palette,
+                                onShowAll = { showAllSongs = false },
+                                showAllLabel = stringResource(R.string.show_less),
+                                horizontalPadding = ARTIST_CONTENT_GUTTER,
+                            )
+                        }
+                    }
                     val numbered = page.type == BrowseType.ALBUM
                     val isCurrentRow = playingRowMatcher(matches.map { it.value }, currentSong)
                     if (matches.isEmpty() && state.data.isNotEmpty()) {
@@ -2028,6 +2044,7 @@ private fun SectionHeading(
     title: String,
     palette: ArtworkPalette,
     onShowAll: (() -> Unit)? = null,
+    showAllLabel: String? = null,
     horizontalPadding: Dp = PAGE_GUTTER,
 ) {
     Row(
@@ -2050,7 +2067,7 @@ private fun SectionHeading(
         )
         if (onShowAll != null) {
             Text(
-                text = stringResource(R.string.show_all),
+                text = showAllLabel ?: stringResource(R.string.show_all),
                 style = MaterialTheme.typography.titleSmall,
                 color = palette.accent,
                 modifier = Modifier
