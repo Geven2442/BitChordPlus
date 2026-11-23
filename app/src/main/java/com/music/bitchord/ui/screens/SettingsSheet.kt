@@ -160,6 +160,7 @@ import com.music.bitchord.data.NerdStats
 import com.music.bitchord.data.scrobbling.LastFM
 import com.music.bitchord.data.listentogether.ListenTogether
 import com.music.bitchord.data.settings.AppSettings
+import com.music.bitchord.voice.VoiceControlService
 import com.music.bitchord.data.settings.OutputPcmMode
 import com.music.bitchord.data.settings.BitPerfectMode
 import com.music.bitchord.playback.AudioOutputStatus
@@ -278,6 +279,34 @@ fun SettingsScreen(
     val phoneLyricsNewline by AppSettings.phoneLyricsNewline.collectAsStateWithLifecycle()
     val lyricsWhenScreenOff by AppSettings.lyricsWhenScreenOff.collectAsStateWithLifecycle()
     val lyricLeadMs by AppSettings.lyricLeadMs.collectAsStateWithLifecycle()
+    val voiceControl by AppSettings.voiceControl.collectAsStateWithLifecycle()
+    val voiceContinuous by AppSettings.voiceControlContinuous.collectAsStateWithLifecycle()
+    val voiceContext = LocalContext.current
+    // What to switch on once the microphone permission has been answered.
+    var voiceAfterPermission by remember { mutableStateOf<String?>(null) }
+    val voicePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val wanted = voiceAfterPermission
+        voiceAfterPermission = null
+        if (granted && wanted != null) {
+            AppSettings.setVoiceControl(true)
+            if (wanted == "continuous") {
+                AppSettings.setVoiceControlContinuous(true)
+                VoiceControlService.start(voiceContext)
+            }
+        }
+    }
+    fun enableVoice(continuous: Boolean) {
+        if (VoiceControlService.canRecord(voiceContext)) {
+            AppSettings.setVoiceControl(true)
+            if (continuous) {
+                AppSettings.setVoiceControlContinuous(true)
+                VoiceControlService.start(voiceContext)
+            }
+        } else {
+            voiceAfterPermission = if (continuous) "continuous" else "button"
+            voicePermission.launch(android.Manifest.permission.RECORD_AUDIO)
+        }
+    }
     val statusBarLyrics by AppSettings.statusBarLyrics.collectAsStateWithLifecycle()
     val hideLyricsPreview by AppSettings.hideLyricsPreview.collectAsStateWithLifecycle()
     val lyricsSources by AppSettings.lyricsSources.collectAsStateWithLifecycle()
@@ -1550,6 +1579,58 @@ fun SettingsScreen(
                             subtitle = stringResource(R.string.car_lyrics_translation_subtitle),
                             trailing = { IosSwitch(checked = carLyricsTranslation, onCheckedChange = AppSettings::setCarLyricsTranslation) },
                             onClick = { AppSettings.setCarLyricsTranslation(!carLyricsTranslation) },
+                        )
+                    }
+                }
+                val voiceTitle = stringResource(R.string.voice_control)
+                row(voiceTitle, "voice", "speech", "microphone", "tile", "hands free") {
+                    SettingsRow(
+                        icon = SfIcons.Language,
+                        title = voiceTitle,
+                        subtitle = stringResource(R.string.voice_control_subtitle),
+                        trailing = {
+                            IosSwitch(
+                                checked = voiceControl,
+                                onCheckedChange = { on ->
+                                    if (on) enableVoice(continuous = false) else {
+                                        AppSettings.setVoiceControl(false)
+                                        VoiceControlService.stop(voiceContext)
+                                    }
+                                },
+                            )
+                        },
+                        onClick = {
+                            if (!voiceControl) enableVoice(continuous = false) else {
+                                AppSettings.setVoiceControl(false)
+                                VoiceControlService.stop(voiceContext)
+                            }
+                        },
+                    )
+                }
+                if (voiceControl) {
+                    val voiceContinuousTitle = stringResource(R.string.voice_continuous)
+                    row(voiceContinuousTitle, "voice", "speech", "microphone", "always", "listening", "hands free") {
+                        SettingsRow(
+                            icon = SfIcons.Language,
+                            title = voiceContinuousTitle,
+                            subtitle = stringResource(R.string.voice_continuous_subtitle),
+                            trailing = {
+                                IosSwitch(
+                                    checked = voiceContinuous,
+                                    onCheckedChange = { on ->
+                                        if (on) enableVoice(continuous = true) else {
+                                            AppSettings.setVoiceControlContinuous(false)
+                                            VoiceControlService.stop(voiceContext)
+                                        }
+                                    },
+                                )
+                            },
+                            onClick = {
+                                if (!voiceContinuous) enableVoice(continuous = true) else {
+                                    AppSettings.setVoiceControlContinuous(false)
+                                    VoiceControlService.stop(voiceContext)
+                                }
+                            },
                         )
                     }
                 }

@@ -427,6 +427,17 @@ internal fun inPageOrder(shown: List<String>, page: List<String>): Boolean {
 
 
 class MainActivity : AppCompatActivity() {
+    override fun onStart() {
+        super.onStart()
+        // The microphone service may only be started while the app is on screen,
+        // so a listening session that was left on is picked up again here.
+        if (AppSettings.voiceControl.value && AppSettings.voiceControlContinuous.value &&
+            !com.music.bitchord.voice.VoiceControlService.running.value
+        ) {
+            com.music.bitchord.voice.VoiceControlService.start(this)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

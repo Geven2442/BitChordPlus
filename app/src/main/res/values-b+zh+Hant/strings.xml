@@ -1564,4 +1564,17 @@
     <string name="lyrics_when_screen_off_subtitle">關螢幕（含息屏顯示）時，鎖定畫面和通知上的歌詞仍會繼續更新；會多耗一點電</string>
     <string name="lyric_lead">歌詞提前量</string>
     <string name="lyric_lead_subtitle">通知、鎖定畫面和 Now Bar 的歌詞比歌聲慢時，把數值調大；跑到歌聲前面就調小。預設 350 ms。</string>
+    <string name="voice_control">語音控制</string>
+    <string name="voice_control_subtitle">把「語音控制」磚加到快速設定，點一下再說「下一首」「上一首」「暫停」「音量調到五十」。需要麥克風權限。</string>
+    <string name="voice_continuous">持續聆聽（免按）</string>
+    <string name="voice_continuous_subtitle">螢幕關閉後也持續聽，必須完整說出指令（如「下一首」「大聲一點」）才會執行，避免歌詞誤觸。較耗電，通知欄會顯示聆聽中。App 被系統關閉後，需重新打開 App 才會恢復。</string>
+    <string name="voice_notification_title">BitChord+ 語音控制</string>
+    <string name="voice_notification_text">聆聽中：說「下一首」「暫停」「音量調到五十」</string>
+    <string name="voice_notification_stop">停止</string>
+    <string name="voice_tile_label">語音控制</string>
+    <string name="voice_listening">聆聽中…</string>
+    <string name="voice_not_enabled">請先到設定開啟語音控制</string>
+    <string name="voice_no_permission">需要麥克風權限</string>
+    <string name="voice_not_understood">沒聽懂指令</string>
+    <string name="voice_not_available">這支手機沒有可用的語音辨識</string>
 </resources>

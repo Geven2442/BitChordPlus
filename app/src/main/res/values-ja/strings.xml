@@ -1565,4 +1565,17 @@
     <string name="lyrics_when_screen_off_subtitle">Keep the lock screen and notification lyric moving while the screen is off or on Always On Display. Uses a little more battery</string>
     <string name="lyric_lead">Lyric lead</string>
     <string name="lyric_lead_subtitle">Raise it if the notification / lock-screen lyric shows up after the singing; lower it if it runs ahead. Default 350 ms.</string>
+    <string name="voice_control">Voice control</string>
+    <string name="voice_control_subtitle">Add the Voice control tile to Quick Settings, tap it, then say next, previous, pause or volume 50. Needs the microphone permission.</string>
+    <string name="voice_continuous">Always listening</string>
+    <string name="voice_continuous_subtitle">Keeps listening with the screen off. Only a whole command such as next or louder is acted on, so song lyrics do not trigger it. Uses more battery, and a notification shows while it listens. After the system closes the app, open it again to resume.</string>
+    <string name="voice_notification_title">BitChord+ voice control</string>
+    <string name="voice_notification_text">Listening: say next, pause or volume 50</string>
+    <string name="voice_notification_stop">Stop</string>
+    <string name="voice_tile_label">Voice control</string>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_not_enabled">Turn on Voice control in Settings first</string>
+    <string name="voice_no_permission">Microphone permission needed</string>
+    <string name="voice_not_understood">Command not understood</string>
+    <string name="voice_not_available">No speech recognition available on this phone</string>
 </resources>

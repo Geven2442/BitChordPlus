@@ -692,6 +692,10 @@ object AppSettings {
     val lyricsWhenScreenOff = MutableStateFlow(false)
     /** How far ahead of the playback clock the notification / lock-screen lyric is sent, in ms. */
     val lyricLeadMs = MutableStateFlow(DEFAULT_LYRIC_LEAD_MS)
+    /** Voice control by button (Quick Settings tile). */
+    val voiceControl = MutableStateFlow(false)
+    /** Voice control that keeps listening in the background (foreground service). */
+    val voiceControlContinuous = MutableStateFlow(false)
     /** Upstream BitChord's queue: songs played from "play next" are removed instead of kept as history. */
     val originalQueueLogic = MutableStateFlow(false)
     /** Starting a new playlist/album keeps songs queued with "play next" that haven't played yet. */
@@ -1207,6 +1211,8 @@ object AppSettings {
         carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
         phoneLyricsNewline.value = prefs.getBoolean(KEY_PHONE_LYRICS_NEWLINE, false)
         lyricsWhenScreenOff.value = prefs.getBoolean(KEY_LYRICS_WHEN_SCREEN_OFF, false)
+        voiceControl.value = prefs.getBoolean(KEY_VOICE_CONTROL, false)
+        voiceControlContinuous.value = prefs.getBoolean(KEY_VOICE_CONTROL_CONTINUOUS, false)
         lyricLeadMs.value = prefs.getInt(KEY_LYRIC_LEAD_MS, DEFAULT_LYRIC_LEAD_MS).coerceIn(0, MAX_LYRIC_LEAD_MS)
         originalQueueLogic.value = prefs.getBoolean(KEY_ORIGINAL_QUEUE_LOGIC, false)
         keepQueuedOnNewPlay.value = prefs.getBoolean(KEY_KEEP_QUEUED_ON_NEW_PLAY, true)
@@ -1772,6 +1778,17 @@ object AppSettings {
     fun setPhoneLyricsOnTitle(value: Boolean) {
         phoneLyricsOnTitle.value = value
         prefs.edit().putBoolean(KEY_PHONE_LYRICS_ON_TITLE, value).apply()
+    }
+
+    fun setVoiceControl(value: Boolean) {
+        voiceControl.value = value
+        prefs.edit().putBoolean(KEY_VOICE_CONTROL, value).apply()
+        if (!value) setVoiceControlContinuous(false)
+    }
+
+    fun setVoiceControlContinuous(value: Boolean) {
+        voiceControlContinuous.value = value
+        prefs.edit().putBoolean(KEY_VOICE_CONTROL_CONTINUOUS, value).apply()
     }
 
     fun setLyricLeadMs(value: Int) {
@@ -2613,6 +2630,8 @@ object AppSettings {
     private const val KEY_PHONE_LYRICS_NEWLINE = "phone_lyrics_newline"
     private const val KEY_LYRICS_WHEN_SCREEN_OFF = "lyrics_when_screen_off"
     private const val KEY_LYRIC_LEAD_MS = "lyric_lead_ms"
+    private const val KEY_VOICE_CONTROL = "voice_control"
+    private const val KEY_VOICE_CONTROL_CONTINUOUS = "voice_control_continuous"
     const val DEFAULT_LYRIC_LEAD_MS = 350
     const val MAX_LYRIC_LEAD_MS = 1500
     private const val KEY_ORIGINAL_QUEUE_LOGIC = "original_queue_logic"
