@@ -687,6 +687,9 @@ object AppSettings {
     val carLyricsTranslation = MutableStateFlow(false)
     /** Experimental: phone lyric line broken onto its own line inside the title (Now Bar / Dynamic island). */
     val phoneLyricsNewline = MutableStateFlow(false)
+
+    /** Keep refreshing the notification / lock screen lyric while the screen is off (costs battery). */
+    val lyricsWhenScreenOff = MutableStateFlow(false)
     /** Upstream BitChord's queue: songs played from "play next" are removed instead of kept as history. */
     val originalQueueLogic = MutableStateFlow(false)
     /** Starting a new playlist/album keeps songs queued with "play next" that haven't played yet. */
@@ -1201,6 +1204,7 @@ object AppSettings {
         carLyricsOnTitle.value = prefs.getBoolean(KEY_CAR_LYRICS_ON_TITLE, false)
         carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
         phoneLyricsNewline.value = prefs.getBoolean(KEY_PHONE_LYRICS_NEWLINE, false)
+        lyricsWhenScreenOff.value = prefs.getBoolean(KEY_LYRICS_WHEN_SCREEN_OFF, false)
         originalQueueLogic.value = prefs.getBoolean(KEY_ORIGINAL_QUEUE_LOGIC, false)
         keepQueuedOnNewPlay.value = prefs.getBoolean(KEY_KEEP_QUEUED_ON_NEW_PLAY, true)
         phoneLyrics.value = prefs.getBoolean(KEY_PHONE_LYRICS, true)
@@ -1765,6 +1769,11 @@ object AppSettings {
     fun setPhoneLyricsOnTitle(value: Boolean) {
         phoneLyricsOnTitle.value = value
         prefs.edit().putBoolean(KEY_PHONE_LYRICS_ON_TITLE, value).apply()
+    }
+
+    fun setLyricsWhenScreenOff(value: Boolean) {
+        lyricsWhenScreenOff.value = value
+        prefs.edit().putBoolean(KEY_LYRICS_WHEN_SCREEN_OFF, value).apply()
     }
 
     fun setPhoneLyricsNewline(value: Boolean) {
@@ -2593,6 +2602,7 @@ object AppSettings {
     private const val KEY_CAR_LYRICS_ON_TITLE = "car_lyrics_on_title"
     private const val KEY_CAR_LYRICS_TRANSLATION = "car_lyrics_translation"
     private const val KEY_PHONE_LYRICS_NEWLINE = "phone_lyrics_newline"
+    private const val KEY_LYRICS_WHEN_SCREEN_OFF = "lyrics_when_screen_off"
     private const val KEY_ORIGINAL_QUEUE_LOGIC = "original_queue_logic"
     private const val KEY_KEEP_QUEUED_ON_NEW_PLAY = "keep_queued_on_new_play"
     private const val KEY_PHONE_LYRICS = "phone_lyrics"

@@ -8878,7 +8878,7 @@ class PlaybackService : MediaLibraryService() {
         // Screen off and no car: nothing shows the line, so skip the
         // notification / lock-screen / Now Bar refresh and save the battery.
         // The next line (a few seconds on) refreshes them once the screen is on.
-        if (announce && (isScreenOn() || carConnected())) {
+        if (announce && (isScreenOn() || carConnected() || AppSettings.lyricsWhenScreenOff.value)) {
             (mediaSession?.player as? SessionPlayer)?.announceMetadataChanged()
         }
     }

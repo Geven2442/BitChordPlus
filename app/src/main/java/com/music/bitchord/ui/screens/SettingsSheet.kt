@@ -276,6 +276,7 @@ fun SettingsScreen(
     val phoneLyrics by AppSettings.phoneLyrics.collectAsStateWithLifecycle()
     val phoneLyricsOnTitle by AppSettings.phoneLyricsOnTitle.collectAsStateWithLifecycle()
     val phoneLyricsNewline by AppSettings.phoneLyricsNewline.collectAsStateWithLifecycle()
+    val lyricsWhenScreenOff by AppSettings.lyricsWhenScreenOff.collectAsStateWithLifecycle()
     val statusBarLyrics by AppSettings.statusBarLyrics.collectAsStateWithLifecycle()
     val hideLyricsPreview by AppSettings.hideLyricsPreview.collectAsStateWithLifecycle()
     val lyricsSources by AppSettings.lyricsSources.collectAsStateWithLifecycle()
@@ -1488,6 +1489,16 @@ fun SettingsScreen(
                             subtitle = stringResource(R.string.phone_lyrics_newline_subtitle),
                             trailing = { IosSwitch(checked = phoneLyricsNewline, onCheckedChange = AppSettings::setPhoneLyricsNewline) },
                             onClick = { AppSettings.setPhoneLyricsNewline(!phoneLyricsNewline) },
+                        )
+                    }
+                    val screenOffTitle = stringResource(R.string.lyrics_when_screen_off)
+                    row(screenOffTitle, "lyrics", "screen", "off", "aod", "always on") {
+                        SettingsRow(
+                            icon = SfIcons.Language,
+                            title = screenOffTitle,
+                            subtitle = stringResource(R.string.lyrics_when_screen_off_subtitle),
+                            trailing = { IosSwitch(checked = lyricsWhenScreenOff, onCheckedChange = AppSettings::setLyricsWhenScreenOff) },
+                            onClick = { AppSettings.setLyricsWhenScreenOff(!lyricsWhenScreenOff) },
                         )
                     }
                 }
