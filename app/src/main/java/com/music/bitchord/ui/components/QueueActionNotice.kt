@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
@@ -17,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -29,6 +32,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.ui.player.playerBarSurface
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 
 /** A unique queue result, so repeating the same action restarts its lifetime. */
 data class QueueActionNotice(
@@ -37,6 +42,7 @@ data class QueueActionNotice(
 )
 
 /** Brief queue confirmation shown immediately above the mini player. */
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun QueueActionNoticeHost(
     notice: QueueActionNotice?,
@@ -44,8 +50,11 @@ fun QueueActionNoticeHost(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     hazeState: HazeState? = null,
+    /** Styled like the mini player (frosted pill) rather than the player sheet's dark slab. */
+    matchBar: Boolean = false,
 ) {
     val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
+    val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
 
     AnimatedContent(
         targetState = notice,
@@ -61,7 +70,42 @@ fun QueueActionNoticeHost(
         label = "queueActionNotice",
         modifier = modifier.fillMaxWidth(),
     ) { current ->
-        if (current != null) {
+        if (current != null && matchBar) {
+            val shape = RoundedCornerShape(percent = 50)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp)
+                    .clip(shape)
+                    .then(
+                        if (hazeState == null || reduceDynamicBlur) {
+                            Modifier.background(MaterialTheme.colorScheme.surface)
+                        } else {
+                            Modifier.optimizedHazeEffect(
+                                state = hazeState,
+                                style = HazeMaterials.thin(MaterialTheme.colorScheme.surface),
+                            )
+                        },
+                    )
+                    .border(0.5.dp, Color.White.copy(alpha = 0.10f), shape)
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .padding(horizontal = 22.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = current.message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f).padding(vertical = 14.dp),
+                )
+                if (actionLabel != null && onAction != null) {
+                    TextButton(onClick = onAction) {
+                        Text(actionLabel, color = MaterialTheme.colorScheme.onBackground)
+                    }
+                }
+            }
+        } else if (current != null) {
             Surface(
                 color = if (hazeState != null) Color.Transparent else Color(0xFF282828),
                 contentColor = Color.White,
