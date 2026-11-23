@@ -108,6 +108,8 @@ import com.music.bitchord.data.innertube.InnertubeParser
 import com.music.bitchord.data.YtMusicRepository
 import com.music.bitchord.data.lyrics.EmbeddedLyrics
 import com.music.bitchord.data.lyrics.LyricLine
+import com.music.bitchord.data.lyrics.LyricsTranslation
+import com.music.bitchord.data.LocaleTags
 import com.music.bitchord.data.lyrics.LyricsRepository
 import com.music.bitchord.data.lyrics.LyricsSource
 import com.music.bitchord.data.model.NOTIFICATION_ART_PX
@@ -974,6 +976,10 @@ class PlaybackService : MediaLibraryService() {
 
     private var serviceLyricsJob: Job? = null
     private var serviceLyrics: List<LyricLine>? = null
+    /** Translation of [serviceLyrics] for the car line, when that option is on. */
+    private var carTranslation: List<LyricLine>? = null
+    private var carTranslationFor: List<LyricLine>? = null
+    private var carTranslationJob: Job? = null
     private var lastPublishedSubtitle: String? = null
     private var carLyricLine: String? = null
     private var lyricSurfacesKey = ""
@@ -1184,7 +1190,10 @@ class PlaybackService : MediaLibraryService() {
             )
             // Prune consumed USER_QUEUE entries when playback enters CONTEXT,
             // keeping the timeline clean and ensuring REPEAT_MODE_ALL loops only CONTEXT items.
-            if (!isQueueUndoRestoring(exoPlayer)) QueueCoordinator.keepPlayedUserQueueAsHistory(exoPlayer)
+            if (!isQueueUndoRestoring(exoPlayer)) {
+                if (AppSettings.originalQueueLogic.value) QueueCoordinator.consumePlayedUserQueue(exoPlayer)
+                else QueueCoordinator.keepPlayedUserQueueAsHistory(exoPlayer)
+            }
 
             // The queue moving on by itself. Nobody pressed anything, but it
             // is still this device deciding what the party plays next, and no
@@ -3570,7 +3579,11 @@ class PlaybackService : MediaLibraryService() {
         } else {
             emptyList()
         }
-        val userQueue = upcoming.filter { it.queueTier == QueueTier.USER_QUEUE }.map(MediaItem::toSong)
+        val userQueue = if (AppSettings.keepQueuedOnNewPlay.value) {
+            upcoming.filter { it.queueTier == QueueTier.USER_QUEUE }.map(MediaItem::toSong)
+        } else {
+            emptyList()
+        }
         // The old queue's AutoPlay tail is not carried over, as the flat path
         // in [QueueTimeline.buildContextQueue] does not: it was suggested for
         // the music being replaced, and with ten of them already waiting at the
@@ -8653,6 +8666,9 @@ class PlaybackService : MediaLibraryService() {
         serviceLyricsJob?.cancel()
         serviceLyricsJob = null
         serviceLyrics = null
+        carTranslation = null
+        carTranslationFor = null
+        carTranslationJob?.cancel()
         cancelPrefetch()
         trackAnalyzer.release()
         loudnessRetryJob?.cancel()
@@ -8791,10 +8807,14 @@ class PlaybackService : MediaLibraryService() {
         val currentSong = exoPlayer.currentMediaItem?.toSong() ?: return
         val lines = serviceLyrics
         val pos = crossfade?.loopPositionMs() ?: exoPlayer.currentPosition
+        var carTranslated: String? = null
         val subtitleText = if (lines != null && lines.isNotEmpty() && AppSettings.syncedLyrics.value) {
             val idx = lines.indexOfLast { it.timeMs <= pos }
             val currentLine = lines.getOrNull(idx)
             if (currentLine != null && !currentLine.isGap && currentLine.text.isNotBlank()) {
+                if (AppSettings.carLyrics.value && AppSettings.carLyricsTranslation.value) {
+                    carTranslated = carTranslationFor(lines, currentSong.videoId, idx, currentLine)
+                }
                 "♪ ${currentLine.text}"
             } else {
                 currentSong.artist
@@ -8810,8 +8830,10 @@ class PlaybackService : MediaLibraryService() {
             currentSong.title,
             currentSong.artist,
         )
-        val newCarLine = if (AppSettings.carLyrics.value && playingNow && carConnected()) currentLyricLine else null
-        val surfacesKey = "${AppSettings.carLyricsOnTitle.value}|${AppSettings.phoneLyrics.value}|${AppSettings.phoneLyricsOnTitle.value}"
+        val newCarLine = if (AppSettings.carLyrics.value && playingNow && carConnected()) {
+            if (currentLyricLine != null && !carTranslated.isNullOrBlank()) "$currentLyricLine ／ $carTranslated" else currentLyricLine
+        } else null
+        val surfacesKey = "${AppSettings.carLyricsOnTitle.value}|${AppSettings.carLyricsTranslation.value}|${AppSettings.phoneLyrics.value}|${AppSettings.phoneLyricsOnTitle.value}"
         var announce = false
         if (newCarLine != carLyricLine || surfacesKey != lyricSurfacesKey) {
             carLyricLine = newCarLine
@@ -8844,6 +8866,45 @@ class PlaybackService : MediaLibraryService() {
         if (announce && (isScreenOn() || carConnected())) {
             (mediaSession?.player as? SessionPlayer)?.announceMetadataChanged()
         }
+    }
+
+    /**
+     * The translated text of [line] for the car, starting the translation of the
+     * whole song the first time it is asked for. Null until it has arrived, or when
+     * the song is already in the target language.
+     */
+    private fun carTranslationFor(lines: List<LyricLine>, videoId: String, idx: Int, line: LyricLine): String? {
+        if (carTranslationFor !== lines) {
+            carTranslationFor = lines
+            carTranslation = null
+            carTranslationJob?.cancel()
+            carTranslationJob = scope.launch(Dispatchers.IO) {
+                val result = runCatching {
+                    LyricsTranslation.translate(videoId, lines, carTranslationTarget())
+                }.getOrNull()
+                if (result is LyricsTranslation.Result.Translated) {
+                    withContext(Dispatchers.Main) {
+                        if (carTranslationFor === lines) {
+                            carTranslation = result.lines
+                            updateLyricSubtitle()
+                        }
+                    }
+                }
+            }
+        }
+        val translated = carTranslation ?: return null
+        val text = (if (translated.size == lines.size) translated.getOrNull(idx)
+            else translated.firstOrNull { it.timeMs == line.timeMs })?.text?.trim()
+        return text?.takeIf { it.isNotBlank() && !it.equals(line.text.trim(), ignoreCase = true) }
+    }
+
+    private fun carTranslationTarget(): String {
+        val preferred = AppSettings.translationLanguage.value
+        if (preferred.isNotBlank()) return preferred
+        val tag = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().get(0)?.toLanguageTag()
+            ?.takeIf { it.isNotBlank() } ?: Locale.getDefault().toLanguageTag()
+        return if (LocaleTags.isChineseTag(tag)) LocaleTags.translationWireTarget(tag)
+        else Locale.forLanguageTag(tag).language.ifBlank { "en" }
     }
 
     private fun isScreenOn(): Boolean =

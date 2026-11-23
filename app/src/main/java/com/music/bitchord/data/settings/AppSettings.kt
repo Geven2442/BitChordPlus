@@ -680,6 +680,12 @@ object AppSettings {
 
     /** On Android Auto, put the lyric on the title line and "title · artist" below it. */
     val carLyricsOnTitle = MutableStateFlow(false)
+    /** Android Auto lyric line also carries a translation (original ／ translation). */
+    val carLyricsTranslation = MutableStateFlow(false)
+    /** Upstream BitChord's queue: songs played from "play next" are removed instead of kept as history. */
+    val originalQueueLogic = MutableStateFlow(false)
+    /** Starting a new playlist/album keeps songs queued with "play next" that haven't played yet. */
+    val keepQueuedOnNewPlay = MutableStateFlow(true)
 
     /** Current lyric line on the lock screen, media notification and Now Bar. */
     val phoneLyrics = MutableStateFlow(true)
@@ -1187,6 +1193,9 @@ object AppSettings {
         syncedLyrics.value = prefs.getBoolean(KEY_SYNCED_LYRICS, true)
         carLyrics.value = prefs.getBoolean(KEY_CAR_LYRICS, true)
         carLyricsOnTitle.value = prefs.getBoolean(KEY_CAR_LYRICS_ON_TITLE, false)
+        carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
+        originalQueueLogic.value = prefs.getBoolean(KEY_ORIGINAL_QUEUE_LOGIC, false)
+        keepQueuedOnNewPlay.value = prefs.getBoolean(KEY_KEEP_QUEUED_ON_NEW_PLAY, true)
         phoneLyrics.value = prefs.getBoolean(KEY_PHONE_LYRICS, true)
         phoneLyricsOnTitle.value = prefs.getBoolean(KEY_PHONE_LYRICS_ON_TITLE, false)
         statusBarLyrics.value = prefs.getBoolean(KEY_STATUS_BAR_LYRICS, true)
@@ -1749,6 +1758,21 @@ object AppSettings {
     fun setPhoneLyricsOnTitle(value: Boolean) {
         phoneLyricsOnTitle.value = value
         prefs.edit().putBoolean(KEY_PHONE_LYRICS_ON_TITLE, value).apply()
+    }
+
+    fun setCarLyricsTranslation(value: Boolean) {
+        carLyricsTranslation.value = value
+        prefs.edit().putBoolean(KEY_CAR_LYRICS_TRANSLATION, value).apply()
+    }
+
+    fun setOriginalQueueLogic(value: Boolean) {
+        originalQueueLogic.value = value
+        prefs.edit().putBoolean(KEY_ORIGINAL_QUEUE_LOGIC, value).apply()
+    }
+
+    fun setKeepQueuedOnNewPlay(value: Boolean) {
+        keepQueuedOnNewPlay.value = value
+        prefs.edit().putBoolean(KEY_KEEP_QUEUED_ON_NEW_PLAY, value).apply()
     }
 
     fun setCarLyricsOnTitle(value: Boolean) {
@@ -2548,6 +2572,9 @@ object AppSettings {
     private const val KEY_SYNCED_LYRICS = "synced_lyrics"
     private const val KEY_CAR_LYRICS = "car_lyrics"
     private const val KEY_CAR_LYRICS_ON_TITLE = "car_lyrics_on_title"
+    private const val KEY_CAR_LYRICS_TRANSLATION = "car_lyrics_translation"
+    private const val KEY_ORIGINAL_QUEUE_LOGIC = "original_queue_logic"
+    private const val KEY_KEEP_QUEUED_ON_NEW_PLAY = "keep_queued_on_new_play"
     private const val KEY_PHONE_LYRICS = "phone_lyrics"
     private const val KEY_PHONE_LYRICS_ON_TITLE = "phone_lyrics_on_title"
     private const val KEY_STATUS_BAR_LYRICS = "status_bar_lyrics"

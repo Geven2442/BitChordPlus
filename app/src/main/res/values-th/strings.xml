@@ -1556,4 +1556,10 @@
     <string name="update_channel_name">App updates</string>
     <string name="update_notification_title">BitChord+ update available</string>
     <string name="update_notification_text">Version %1$s is ready. Tap to update.</string>
+    <string name="original_queue_logic">Original BitChord queue logic</string>
+    <string name="original_queue_logic_subtitle">Songs played from "Play next" are removed from the queue like the original BitChord; off keeps them as history (YouTube Music style)</string>
+    <string name="keep_queued_on_new_play">Keep queued songs when starting new playback</string>
+    <string name="keep_queued_on_new_play_subtitle">On: songs added with "Play next" that haven\'t played stay at the front when you start another playlist or album. Off: they are cleared</string>
+    <string name="car_lyrics_translation">Translation in car lyrics</string>
+    <string name="car_lyrics_translation_subtitle">The car lyric line shows "original ／ translation", in the lyrics translation language (needs internet)</string>
 </resources>

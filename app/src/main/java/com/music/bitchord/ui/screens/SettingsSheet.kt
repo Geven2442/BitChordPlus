@@ -272,6 +272,7 @@ fun SettingsScreen(
     val syncedLyrics by AppSettings.syncedLyrics.collectAsStateWithLifecycle()
     val carLyrics by AppSettings.carLyrics.collectAsStateWithLifecycle()
     val carLyricsOnTitle by AppSettings.carLyricsOnTitle.collectAsStateWithLifecycle()
+    val carLyricsTranslation by AppSettings.carLyricsTranslation.collectAsStateWithLifecycle()
     val phoneLyrics by AppSettings.phoneLyrics.collectAsStateWithLifecycle()
     val phoneLyricsOnTitle by AppSettings.phoneLyricsOnTitle.collectAsStateWithLifecycle()
     val statusBarLyrics by AppSettings.statusBarLyrics.collectAsStateWithLifecycle()
@@ -306,6 +307,8 @@ fun SettingsScreen(
     val hideStatusBarInPlayer by AppSettings.hideStatusBarInPlayer.collectAsStateWithLifecycle()
     val hideSongStatus by AppSettings.hideSongStatus.collectAsStateWithLifecycle()
     val showQueueHistory by AppSettings.showQueueHistory.collectAsStateWithLifecycle()
+    val originalQueueLogic by AppSettings.originalQueueLogic.collectAsStateWithLifecycle()
+    val keepQueuedOnNewPlay by AppSettings.keepQueuedOnNewPlay.collectAsStateWithLifecycle()
     val swipeToPlayNext by AppSettings.swipeToPlayNext.collectAsStateWithLifecycle()
     val dontRepeatSuggestions by AppSettings.dontRepeatSuggestions.collectAsStateWithLifecycle()
     val preferMusicOnly by AppSettings.preferMusicOnly.collectAsStateWithLifecycle()
@@ -1502,6 +1505,18 @@ fun SettingsScreen(
                         )
                     }
                 }
+                if (carLyrics) {
+                    val carTranslationTitle = stringResource(R.string.car_lyrics_translation)
+                    row(carTranslationTitle, "lyrics", "android", "auto", "car", "translation") {
+                        SettingsRow(
+                            icon = SfIcons.Language,
+                            title = carTranslationTitle,
+                            subtitle = stringResource(R.string.car_lyrics_translation_subtitle),
+                            trailing = { IosSwitch(checked = carLyricsTranslation, onCheckedChange = AppSettings::setCarLyricsTranslation) },
+                            onClick = { AppSettings.setCarLyricsTranslation(!carLyricsTranslation) },
+                        )
+                    }
+                }
                 val lyricsBlurTitle = stringResource(R.string.blur_unfocused_lyrics)
                 row(lyricsBlurTitle, "lyrics", "blur") {
                     SettingsRow(
@@ -1886,6 +1901,26 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setShowQueueHistory(!showQueueHistory) },
+                )
+            }
+            val originalQueueTitle = stringResource(R.string.original_queue_logic)
+            row(originalQueueTitle, "queue", "play next", "original", "logic") {
+                SettingsRow(
+                    icon = SfIcons.History,
+                    title = originalQueueTitle,
+                    subtitle = stringResource(R.string.original_queue_logic_subtitle),
+                    trailing = { IosSwitch(checked = originalQueueLogic, onCheckedChange = AppSettings::setOriginalQueueLogic) },
+                    onClick = { AppSettings.setOriginalQueueLogic(!originalQueueLogic) },
+                )
+            }
+            val keepQueuedTitle = stringResource(R.string.keep_queued_on_new_play)
+            row(keepQueuedTitle, "queue", "play next", "keep") {
+                SettingsRow(
+                    icon = SfIcons.History,
+                    title = keepQueuedTitle,
+                    subtitle = stringResource(R.string.keep_queued_on_new_play_subtitle),
+                    trailing = { IosSwitch(checked = keepQueuedOnNewPlay, onCheckedChange = AppSettings::setKeepQueuedOnNewPlay) },
+                    onClick = { AppSettings.setKeepQueuedOnNewPlay(!keepQueuedOnNewPlay) },
                 )
             }
             val hideSongStatusTitle = stringResource(R.string.hide_song_status)

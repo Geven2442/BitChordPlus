@@ -1550,4 +1550,10 @@
     <string name="update_channel_name">應用程式更新</string>
     <string name="update_notification_title">BitChord+ 有新版本</string>
     <string name="update_notification_text">%1$s 已推出，點一下更新。</string>
+    <string name="original_queue_logic">原版播放邏輯</string>
+    <string name="original_queue_logic_subtitle">開啟後，播過的「下一首播放」歌曲會從佇列移除，和原版 BitChord 一樣；關閉則保留成記錄（YouTube Music 風格）</string>
+    <string name="keep_queued_on_new_play">開始新播放時保留待播歌曲</string>
+    <string name="keep_queued_on_new_play_subtitle">開啟後，開始播放新的歌單或專輯時，之前用「下一首播放」加入但還沒播的歌會繼續排在前面；關閉則一併清除</string>
+    <string name="car_lyrics_translation">車機歌詞顯示翻譯</string>
+    <string name="car_lyrics_translation_subtitle">車機的歌詞行改為「原文 ／ 翻譯」，翻譯語言跟隨歌詞翻譯設定（需要網路）</string>
 </resources>

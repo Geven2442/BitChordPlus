@@ -1627,8 +1627,13 @@ private fun BitChordApp(
                 if (bounded && !CastController.state.value.casting) {
                     c.playBoundedContext(songs, index, source, continuationToken)
                 } else {
+                    val keepQueued = AppSettings.keepQueuedOnNewPlay.value
                     val result = QueueCoordinator.buildContextQueue(
-                        currentTimeline = currentTimeline,
+                        // Off: songs still waiting in "play next" are dropped; the
+                        // playing track and history keep their positions.
+                        currentTimeline = if (keepQueued) currentTimeline else currentTimeline.filterIndexed { i, s ->
+                            i <= currentIndex || s.queueTier != QueueTier.USER_QUEUE
+                        },
                         currentIndex = currentIndex,
                         newContextSongs = songs,
                         selectedIndex = index,
