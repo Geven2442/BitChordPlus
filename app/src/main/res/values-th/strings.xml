@@ -1544,11 +1544,11 @@
     <string name="drive_over_cellular">ซิงค์ผ่านอินเทอร์เน็ตมือถือ</string>
     <string name="drive_over_cellular_subtitle">เมื่อปิด การซิงค์อัตโนมัติจะรอ Wi-Fi</string>
     <string name="status_bar_lyrics">Status bar lyrics</string>
-    <string name="status_bar_lyrics_subtitle">Show the current line as a Live Update in the status bar and Now Bar</string>
+    <string name="status_bar_lyrics_subtitle">Posts a separate Live Update with the current line in the status bar and Now Bar. The Now Bar / status bar chip may also show the media notification lyric, so turn both off to hide it completely</string>
     <string name="car_lyrics">Lyrics on Android Auto</string>
     <string name="car_lyrics_subtitle">Show the current line on the car screen while connected to a car</string>
     <string name="phone_lyrics">Lyrics on lock screen &amp; notification</string>
-    <string name="phone_lyrics_subtitle">Show the current line in the media notification, lock screen and Now Bar</string>
+    <string name="phone_lyrics_subtitle">Shows the current line in the media notification and lock screen. Samsung’s Now Bar and status bar chip reuse this lyric, so turn this off to stop them showing it</string>
     <string name="phone_lyrics_on_title">Lyric on the title line</string>
     <string name="lyrics_on_title_subtitle">First line is the lyric, second line is \"title · artist\"</string>
     <string name="lyrics_after_title_subtitle">First line is \"title · artist\", second line is the lyric</string>

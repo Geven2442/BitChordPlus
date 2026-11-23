@@ -1538,11 +1538,11 @@
     <string name="drive_over_cellular">使用移动数据同步</string>
     <string name="drive_over_cellular_subtitle">关闭时，自动同步会等待 Wi-Fi</string>
     <string name="status_bar_lyrics">状态栏歌词</string>
-    <string name="status_bar_lyrics_subtitle">用“实时更新”在状态栏和 Now Bar 显示当前这句歌词</string>
+    <string name="status_bar_lyrics_subtitle">用「即時更新」另外發一則通知，在狀態欄和 Now Bar 顯示目前這句歌詞；Now Bar／狀態欄膠囊也會顯示媒體通知的歌詞，想完全不顯示請兩個都關</string>
     <string name="car_lyrics">Android Auto 显示歌词</string>
     <string name="car_lyrics_subtitle">连上车机时，在车机画面显示当前这句歌词</string>
     <string name="phone_lyrics">通知与锁屏歌词</string>
-    <string name="phone_lyrics_subtitle">在媒体通知、锁屏和 Now Bar 显示当前这句歌词</string>
+    <string name="phone_lyrics_subtitle">在媒體通知、鎖定畫面顯示目前這句歌詞；三星的 Now Bar 和狀態欄膠囊會直接沿用這裡的歌詞，所以關掉這個才會讓它們不再顯示</string>
     <string name="phone_lyrics_on_title">歌词放在歌名那行</string>
     <string name="lyrics_on_title_subtitle">第一行歌词，第二行「歌名 · 歌手」</string>
     <string name="lyrics_after_title_subtitle">第一行「歌名 · 歌手」，第二行歌词</string>
