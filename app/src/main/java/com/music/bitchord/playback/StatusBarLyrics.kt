@@ -21,6 +21,13 @@ class StatusBarLyrics(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
     private var shown: String? = null
 
+    /**
+     * False until a cancel has really reached the system. After a service
+     * restart [shown] is empty while the previous instance's notification may
+     * still be posted, so the first cancel must not be skipped on that basis.
+     */
+    private var cleared = false
+
     fun update(line: String?, title: String?, artist: String?) {
         if (line.isNullOrBlank()) {
             cancel()
@@ -48,6 +55,7 @@ class StatusBarLyrics(private val context: Context) {
         promote(builder, line)
         runCatching { manager.notify(NOTIFICATION_ID, builder.build()) }
         shown = key
+        cleared = false
     }
 
     @SuppressLint("NewApi")
@@ -59,8 +67,9 @@ class StatusBarLyrics(private val context: Context) {
     }
 
     fun cancel() {
-        if (shown == null) return
+        if (shown == null && cleared) return
         shown = null
+        cleared = true
         runCatching { manager.cancel(NOTIFICATION_ID) }
     }
 
