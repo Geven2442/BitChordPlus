@@ -41,6 +41,7 @@ object AppUpdateChecker {
     )
 
     private const val CACHE_SUBDIR = "updates"
+    private const val CHECK_INTERVAL_MS = 10 * 60 * 1000L
 
     private const val LATEST_RELEASE_URL =
         "https://api.github.com/repos/Geven2442/BitChordPlus/releases/latest"
@@ -65,7 +66,21 @@ object AppUpdateChecker {
     @Volatile
     private var downloadCancelled = false
 
-    suspend fun check() = withContext(Dispatchers.IO) {
+    /** When the release list was last asked, so coming back to the app does not hammer GitHub. */
+    @Volatile
+    private var lastCheckMs = 0L
+
+    /**
+     * Asks GitHub for the newest release. Cheap enough to call on every return
+     * to the app: unless [force] is set, a check made in the last ten minutes
+     * stands. A newer release than the one already offered replaces it, and
+     * drops an APK downloaded for the older one so the dialog never installs
+     * a stale file.
+     */
+    suspend fun check(force: Boolean = false) = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastCheckMs < CHECK_INTERVAL_MS) return@withContext
+        lastCheckMs = now
         runCatching {
             val request = Request.Builder().url(LATEST_RELEASE_URL).build()
             val body = Http.client.newCall(request).execute().use { response ->
@@ -79,6 +94,8 @@ object AppUpdateChecker {
             val notes = release["body"]?.jsonPrimitive?.contentOrNull
             val latest = tag.removePrefix("v")
             if (isNewer(latest, BuildConfig.VERSION_NAME)) {
+                val previous = _available.value
+                if (previous != null && previous.version != latest) _download.value = DownloadState.Idle
                 _available.value = UpdateInfo(latest, url, apkUrl, notes)
             }
         }
@@ -134,6 +151,9 @@ object AppUpdateChecker {
      * download.
      */
     suspend fun downloadApk(context: Context): Unit = withContext(Dispatchers.IO) {
+        // Whatever is newest right now, not what the app saw when it started: a
+        // release published since then is the one to install.
+        check(force = true)
         val info = _available.value ?: return@withContext
         val url = info.apkUrl ?: return@withContext
         downloadCancelled = false

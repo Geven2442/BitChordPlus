@@ -133,6 +133,7 @@ import com.music.bitchord.auth.DiscordLoginScreen
 import com.music.bitchord.auth.SpotifyLoginScreen
 import com.music.bitchord.auth.WebSessionMode
 import com.music.bitchord.auth.YtMusicLoginScreen
+import androidx.lifecycle.lifecycleScope
 import com.music.bitchord.data.AppUpdateChecker
 import com.music.bitchord.data.LocalMediaRepository
 import com.music.bitchord.data.listentogether.JamInviteLink
@@ -429,6 +430,9 @@ internal fun inPageOrder(shown: List<String>, page: List<String>): Boolean {
 class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
+        // Look for a newer release every time the app comes back to the screen
+        // (at most once per ten minutes), not only at launch.
+        lifecycleScope.launch { AppUpdateChecker.check() }
         // The microphone service may only be started while the app is on screen,
         // so a listening session that was left on is picked up again here.
         if (AppSettings.voiceControl.value && AppSettings.voiceControlContinuous.value &&

@@ -1565,6 +1565,7 @@
     <string name="lyrics_when_screen_off_subtitle">Keep the lock screen and notification lyric moving while the screen is off or on Always On Display. Uses a little more battery</string>
     <string name="lyric_lead">Lyric lead</string>
     <string name="lyric_lead_subtitle">Raise it if the notification / lock-screen lyric shows up after the singing; lower it if it runs ahead. Default 350 ms.</string>
+    <string name="settings_lyrics">Lyrics</string>
     <string name="voice_control">Voice control</string>
     <string name="voice_control_subtitle">Add the Voice control tile to Quick Settings, tap it, then say next, previous, pause or volume 50. Needs the microphone permission.</string>
     <string name="voice_continuous">Always listening</string>

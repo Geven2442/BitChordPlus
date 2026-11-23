@@ -1564,6 +1564,7 @@
     <string name="lyrics_when_screen_off_subtitle">關螢幕（含息屏顯示）時，鎖定畫面和通知上的歌詞仍會繼續更新；會多耗一點電</string>
     <string name="lyric_lead">歌詞提前量</string>
     <string name="lyric_lead_subtitle">通知、鎖定畫面和 Now Bar 的歌詞比歌聲慢時，把數值調大；跑到歌聲前面就調小。預設 350 ms。</string>
+    <string name="settings_lyrics">歌詞</string>
     <string name="voice_control">語音控制</string>
     <string name="voice_control_subtitle">把「語音控制」磚加到快速設定，點一下再說「下一首」「上一首」「暫停」「音量調到五十」。需要麥克風權限。</string>
     <string name="voice_continuous">持續聆聽（免按）</string>

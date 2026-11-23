@@ -1069,6 +1069,58 @@ fun SettingsScreen(
                     )
                 }
             }
+            val voiceTitle = stringResource(R.string.voice_control)
+            row(voiceTitle, "voice", "speech", "microphone", "tile", "hands free") {
+                SettingsRow(
+                    icon = SfIcons.Language,
+                    title = voiceTitle,
+                    subtitle = stringResource(R.string.voice_control_subtitle),
+                    trailing = {
+                        IosSwitch(
+                            checked = voiceControl,
+                            onCheckedChange = { on ->
+                                if (on) enableVoice(continuous = false) else {
+                                    AppSettings.setVoiceControl(false)
+                                    VoiceControlService.stop(voiceContext)
+                                }
+                            },
+                        )
+                    },
+                    onClick = {
+                        if (!voiceControl) enableVoice(continuous = false) else {
+                            AppSettings.setVoiceControl(false)
+                            VoiceControlService.stop(voiceContext)
+                        }
+                    },
+                )
+            }
+            if (voiceControl) {
+                val voiceContinuousTitle = stringResource(R.string.voice_continuous)
+                row(voiceContinuousTitle, "voice", "speech", "microphone", "always", "listening", "hands free") {
+                    SettingsRow(
+                        icon = SfIcons.Language,
+                        title = voiceContinuousTitle,
+                        subtitle = stringResource(R.string.voice_continuous_subtitle),
+                        trailing = {
+                            IosSwitch(
+                                checked = voiceContinuous,
+                                onCheckedChange = { on ->
+                                    if (on) enableVoice(continuous = true) else {
+                                        AppSettings.setVoiceControlContinuous(false)
+                                        VoiceControlService.stop(voiceContext)
+                                    }
+                                },
+                            )
+                        },
+                        onClick = {
+                            if (!voiceContinuous) enableVoice(continuous = true) else {
+                                AppSettings.setVoiceControlContinuous(false)
+                                VoiceControlService.stop(voiceContext)
+                            }
+                        },
+                    )
+                }
+            }
         }
 
         if (shows(SettingsCategory.CONTENT_PREFERENCES)) SearchableSettingsGroup(search, header = stringResource(R.string.content_preferences)) {
@@ -1432,6 +1484,9 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+
+        if (shows(SettingsCategory.LYRICS)) SearchableSettingsGroup(search, header = stringResource(R.string.settings_lyrics)) {
             // This row replaced the old "Synced lyrics" switch, which is still
             // the setting that turns the lookup itself off. Someone who switched
             // that off before the change would be left without lyrics and no
@@ -1579,58 +1634,6 @@ fun SettingsScreen(
                             subtitle = stringResource(R.string.car_lyrics_translation_subtitle),
                             trailing = { IosSwitch(checked = carLyricsTranslation, onCheckedChange = AppSettings::setCarLyricsTranslation) },
                             onClick = { AppSettings.setCarLyricsTranslation(!carLyricsTranslation) },
-                        )
-                    }
-                }
-                val voiceTitle = stringResource(R.string.voice_control)
-                row(voiceTitle, "voice", "speech", "microphone", "tile", "hands free") {
-                    SettingsRow(
-                        icon = SfIcons.Language,
-                        title = voiceTitle,
-                        subtitle = stringResource(R.string.voice_control_subtitle),
-                        trailing = {
-                            IosSwitch(
-                                checked = voiceControl,
-                                onCheckedChange = { on ->
-                                    if (on) enableVoice(continuous = false) else {
-                                        AppSettings.setVoiceControl(false)
-                                        VoiceControlService.stop(voiceContext)
-                                    }
-                                },
-                            )
-                        },
-                        onClick = {
-                            if (!voiceControl) enableVoice(continuous = false) else {
-                                AppSettings.setVoiceControl(false)
-                                VoiceControlService.stop(voiceContext)
-                            }
-                        },
-                    )
-                }
-                if (voiceControl) {
-                    val voiceContinuousTitle = stringResource(R.string.voice_continuous)
-                    row(voiceContinuousTitle, "voice", "speech", "microphone", "always", "listening", "hands free") {
-                        SettingsRow(
-                            icon = SfIcons.Language,
-                            title = voiceContinuousTitle,
-                            subtitle = stringResource(R.string.voice_continuous_subtitle),
-                            trailing = {
-                                IosSwitch(
-                                    checked = voiceContinuous,
-                                    onCheckedChange = { on ->
-                                        if (on) enableVoice(continuous = true) else {
-                                            AppSettings.setVoiceControlContinuous(false)
-                                            VoiceControlService.stop(voiceContext)
-                                        }
-                                    },
-                                )
-                            },
-                            onClick = {
-                                if (!voiceContinuous) enableVoice(continuous = true) else {
-                                    AppSettings.setVoiceControlContinuous(false)
-                                    VoiceControlService.stop(voiceContext)
-                                }
-                            },
                         )
                     }
                 }
@@ -3327,6 +3330,7 @@ internal fun SegmentedControl(
 enum class SettingsCategory(@param:StringRes val title: Int) {
     DOWNLOADS(R.string.downloads),
     PLAYBACK(R.string.playback),
+    LYRICS(R.string.settings_lyrics),
     CONTENT_PREFERENCES(R.string.content_preferences),
     APPEARANCE(R.string.appearance),
     PERFORMANCE(R.string.performance),
@@ -3341,6 +3345,7 @@ enum class SettingsCategory(@param:StringRes val title: Int) {
         get() = when (this) {
             DOWNLOADS -> SfIcons.Download
             PLAYBACK -> SfIcons.PlayCircle
+            LYRICS -> SfIcons.Translate
             CONTENT_PREFERENCES -> SfIcons.Video
             APPEARANCE -> SfIcons.Appearance
             PERFORMANCE -> SfIcons.Performance
