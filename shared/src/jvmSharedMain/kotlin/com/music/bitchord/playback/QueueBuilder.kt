@@ -60,7 +60,7 @@ object QueueBuilder {
 
         for (candidate in ordered) {
             if (out.size >= limit) break
-            if (taken.any { isSameRecording(it, candidate) }) continue
+            if (taken.any { isSameRecording(it, candidate) || isSameTitle(it, candidate) }) continue
 
             val artists = artistSet(candidate.artist)
             val key = artists.minOrNull()
@@ -79,6 +79,17 @@ object QueueBuilder {
             out += candidate
         }
         return out
+    }
+
+    /**
+     * The same song name, whoever is billed. A station that offers "Can I Call
+     * You Now" twice — once by each uploader — reads as a repeat even when the
+     * credits differ enough that [isSameRecording] lets it through. Remix and
+     * cover markers stay in [normalisedTitle], so those remain separate tracks.
+     */
+    fun isSameTitle(a: Song, b: Song): Boolean {
+        val title = normalisedTitle(a.title)
+        return title.isNotEmpty() && title == normalisedTitle(b.title)
     }
 
     /**
@@ -112,7 +123,11 @@ object QueueBuilder {
     /** The cast behind a credit, split out so billing order stops mattering. */
     fun artistSet(raw: String): Set<String> = raw.lowercase(Locale.ROOT)
         .replace(TOPIC, " ")
-        .split(",", "&", "·", "•", ";", " feat", " ft.", " ft ", " x ", " with ")
+        .split(
+            ",", "&", "·", "•", ";", "、", "/", "×", " feat", " ft.", " ft ", " x ", " with ", " and ",
+            // "艾薇 和 吳霏" — Chinese credits join with 和 / 與 / 及, spaced from the names.
+            " 和 ", " 與 ", " 及 ",
+        )
         .map { it.replace(PUNCTUATION, " ").replace(SPACES, " ").trim() }
         .filter { it.isNotEmpty() }
         .toSet()

@@ -159,4 +159,42 @@ class QueueBuilderTest {
         val extra = QueueBuilder.extend(listOf(seed), candidates, limit = 10)
         assertEquals(listOf("v1", "v2"), extra.map { it.videoId })
     }
+
+    @Test
+    fun `the same song name is offered once however the credits read`() {
+        val extra = QueueBuilder.extend(
+            existing = emptyList(),
+            candidates = listOf(
+                song("aaa", "Can I Call You Now", "Jocelyn 9.4.0 和 KIRE"),
+                song("bbb", "Can I Call You Now", "KIRE 和 Jocelyn 9.4.0"),
+                song("ccc", "Can I Call You Now", "Someone Else"),
+                song("ddd", "Another Song", "Third Artist"),
+            ),
+            limit = 10,
+        )
+        assertEquals(listOf("aaa", "ddd"), extra.map { it.videoId })
+    }
+
+    @Test
+    fun `a song already in the queue is not recommended again under another cut`() {
+        val extra = QueueBuilder.extend(
+            existing = listOf(song("old", "Can I Call You Now", "KIRE 和 Jocelyn 9.4.0")),
+            candidates = listOf(
+                song("new", "Can I Call You Now", "Jocelyn 9.4.0 和 KIRE"),
+                song("other", "Different Song", "Another"),
+            ),
+            limit = 10,
+        )
+        assertEquals(listOf("other"), extra.map { it.videoId })
+    }
+
+    @Test
+    fun `a remix keeps its own title and stays`() {
+        val extra = QueueBuilder.extend(
+            existing = emptyList(),
+            candidates = listOf(song("aaa", "Song", "A"), song("bbb", "Song (Remix)", "B")),
+            limit = 10,
+        )
+        assertEquals(listOf("aaa", "bbb"), extra.map { it.videoId })
+    }
 }
