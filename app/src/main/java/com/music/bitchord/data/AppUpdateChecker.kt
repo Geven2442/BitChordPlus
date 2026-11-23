@@ -43,7 +43,7 @@ object AppUpdateChecker {
     private const val CACHE_SUBDIR = "updates"
 
     private const val LATEST_RELEASE_URL =
-        "https://api.github.com/repos/kushagrasinghx/BitChord/releases/latest"
+        "https://api.github.com/repos/Geven2442/BitChordPlus/releases/latest"
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -74,8 +74,8 @@ object AppUpdateChecker {
             val release = json.parseToJsonElement(body) as? JsonObject ?: return@runCatching
             val tag = release["tag_name"]?.jsonPrimitive?.contentOrNull ?: return@runCatching
             val url = release["html_url"]?.jsonPrimitive?.contentOrNull ?: return@runCatching
-            // Personal build: never install the official APK over the top; just link the release.
-            val apkUrl: String? = null
+            // BitChord+ updates come from the fork's own releases (same signing key).
+            val apkUrl: String? = apkAssetUrl(release)
             val notes = release["body"]?.jsonPrimitive?.contentOrNull
             val latest = tag.removePrefix("v")
             if (isNewer(latest, BuildConfig.VERSION_NAME)) {
@@ -245,15 +245,20 @@ object AppUpdateChecker {
      * matches compare equal and testers never get nudged onto the real build.
      */
     internal fun isNewer(latest: String, current: String): Boolean {
-        val l = parseVersion(latest)
         // BitChord+ is "<upstream version>-plusN": it already contains that
-        // upstream release, so it is not a pre-release of it.
-        val c = parseVersion(current.replace(Regex("-plus\\d*$"), ""))
+        // upstream release, so it is not a pre-release of it, and N orders
+        // our own releases against each other.
+        val plusRe = Regex("-plus(\\d*)$")
+        val lPlus = plusRe.find(latest)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val cPlus = plusRe.find(current)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val l = parseVersion(latest.replace(plusRe, ""))
+        val c = parseVersion(current.replace(plusRe, ""))
         for (i in 0 until maxOf(l.parts.size, c.parts.size)) {
             val a = l.parts.getOrElse(i) { 0 }
             val b = c.parts.getOrElse(i) { 0 }
             if (a != b) return a > b
         }
+        if (lPlus != cPlus) return lPlus > cPlus
         return c.isPreRelease && !l.isPreRelease
     }
 }
