@@ -135,6 +135,7 @@ import com.music.bitchord.ui.components.CoverPlaceholder
 import com.music.bitchord.data.canvas.AppleArtistArt
 import com.music.bitchord.data.DebugLog as Log
 import com.music.bitchord.data.canvas.AppleArtistArtRepository
+import com.music.bitchord.data.canvas.appleAliases
 import com.music.bitchord.data.canvas.appleCatalogue
 import com.music.bitchord.data.canvas.ArtistSignature
 import com.music.bitchord.data.canvas.ArtistSignatureRepository
@@ -402,7 +403,7 @@ fun DetailScreen(
     val songsLoading = page.songs is UiState.Loading
     LaunchedEffect(page.browseId, page.title, songsLoading) {
         if (isArtist && !songsLoading) {
-            appleArt = AppleArtistArtRepository.artFor(page.browseId, page.title) { page.appleCatalogue() } ?: appleArt
+            appleArt = AppleArtistArtRepository.artFor(page.browseId, page.title, page.appleAliases()) { page.appleCatalogue() } ?: appleArt
         }
     }
     // Secondary provider: handwritten signature from the user's own

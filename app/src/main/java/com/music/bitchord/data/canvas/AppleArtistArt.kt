@@ -104,6 +104,7 @@ object AppleArtistArtRepository {
     suspend fun artFor(
         browseId: String,
         artistName: String,
+        aliases: Collection<String> = emptyList(),
         catalogue: suspend () -> Collection<String>,
     ): AppleArtistArt? {
         val key = artistName.normalized()
@@ -115,13 +116,32 @@ object AppleArtistArtRepository {
         // Null here is a network hiccup, not an answer — only a settled result
         // (including a genuine "no logo") is worth remembering.
         val entry = withContext(Dispatchers.IO) {
-            runCatching { lookup(artistName, key, titles) }
-                .onFailure { Log.d(TAG, "lookup failed for $artistName: $it") }
-                .getOrNull()
+            lookupAny(artistName, aliases, titles)
         } ?: return null
         synchronized(cache) { cache[browseId] = entry }
         _updates.value++
         return entry.art
+    }
+
+    /**
+     * The page's own name first, then [aliases] — the same artist's name as it
+     * is credited on their songs. YouTube localises a page title ("格蕾西·亞柏拉罕")
+     * while Apple knows only "Gracie Abrams", so the title alone finds nobody.
+     * Each name still has to share a song or release title with the page, so an
+     * alias cannot borrow somebody else's art. Null only when every attempt
+     * failed on the network; a settled "nothing" is an [Entry] with no art.
+     */
+    private fun lookupAny(artistName: String, aliases: Collection<String>, titles: Set<String>): Entry? {
+        val names = (listOf(artistName) + aliases).filter { it.isNotBlank() }.distinctBy { it.normalized() }
+        var settled: Entry? = null
+        for (name in names) {
+            val entry = runCatching { lookup(name, name.normalized(), titles) }
+                .onFailure { Log.d(TAG, "lookup failed for $name: $it") }
+                .getOrNull() ?: continue
+            if (entry.art != null) return entry
+            settled = entry
+        }
+        return settled
     }
 
     private fun lookup(artistName: String, key: String, titles: Set<String>): Entry? {
@@ -242,3 +262,15 @@ object AppleArtistArtRepository {
  */
 fun DetailPage.appleCatalogue(): List<String> =
     AppleCatalogue.titlesOf((songs as? UiState.Success)?.data.orEmpty(), sections)
+
+/**
+ * The artist's name as their own songs credit it. Used when the page title is
+ * localised and Apple's search, which knows the original name, finds nobody.
+ */
+fun DetailPage.appleAliases(): List<String> {
+    val songs = (songs as? UiState.Success)?.data.orEmpty()
+    return songs.flatMap { song ->
+        val refs = song.artists.filter { it.browseId == browseId }.map { it.name }
+        refs.ifEmpty { if (song.artistId == browseId) listOf(song.artist.split(", ", " & ", " · ").first()) else emptyList() }
+    }.filter { it.isNotBlank() && it != title }.distinct().take(3)
+}
