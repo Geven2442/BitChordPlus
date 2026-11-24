@@ -20,6 +20,7 @@ import com.music.bitchord.data.model.playlistMoves
 import com.music.bitchord.data.model.PlaylistPrivacy
 import com.music.bitchord.data.model.SearchFilter
 import com.music.bitchord.data.model.SearchResult
+import com.music.bitchord.playback.QueueBuilder
 import com.music.bitchord.data.model.ShelfItem
 import com.music.bitchord.data.model.Song
 import com.music.bitchord.data.model.SongMenu
@@ -947,6 +948,7 @@ object YtMusicRepository {
     private suspend fun libraryItemsPaged(browseId: String): List<ShelfItem> = itemsPaged(browseId, null)
 
     const val MAX_PAGES = 10
+    private const val SEARCH_SUPPLEMENT_PAGES = 3
 
     /**
      * Liked Music: the `LM` auto-playlist, addressed as a playlist browse id.
@@ -1160,8 +1162,45 @@ object YtMusicRepository {
             val fullSongs = fullSongsDeferred.await()
             val fullShelves = shelvesDeferred.awaitAll()
             val resolvedSongs = if (!fullSongs.isNullOrEmpty()) fullSongs else page.songs
-            page.copy(songs = resolvedSongs, sections = fullShelves)
+            val withSearched = resolvedSongs + searchedArtistSongs(browseId, page.name, resolvedSongs)
+            page.copy(songs = withSearched, sections = fullShelves)
         }
+    }
+
+    /**
+     * Songs search finds under this artist that the page's own Songs shelf does
+     * not list — a track filed under a show or a compilation is still theirs,
+     * and the app's own search shows it. A row is taken only when this artist is
+     * one of its credits (their channel id, or their exact name) so a namesake's
+     * songs never join, and never when it is already there. A failed search adds
+     * nothing: the shelf's songs stand as they were.
+     */
+    private suspend fun searchedArtistSongs(browseId: String, name: String?, known: List<Song>): List<Song> {
+        val wanted = name?.takeIf { normalizedArtistName(it).isNotEmpty() } ?: return emptyList()
+        val found = LinkedHashMap<String, Song>()
+        runCatching {
+            var page = searchPage(wanted, SearchFilter.SONGS).getOrNull()
+            var pages = 0
+            while (page != null && pages++ < SEARCH_SUPPLEMENT_PAGES) {
+                for (row in page.rows) {
+                    val song = when (row) {
+                        is SearchResult.TopTrack -> row.song
+                        is SearchResult.Track -> row.song
+                        else -> null
+                    } ?: continue
+                    if (song.isVideo) continue
+                    val theirs = song.artistId == browseId ||
+                        song.artists.any { it.browseId == browseId } ||
+                        QueueBuilder.artistSet(song.artist).any { isExactArtistMatch(it, wanted) }
+                    if (!theirs) continue
+                    if (known.any { it.videoId == song.videoId || QueueBuilder.isSameRecording(it, song) }) continue
+                    found.putIfAbsent(song.videoId, song)
+                }
+                val token = page.continuation ?: break
+                page = searchContinuation(token, SearchFilter.SONGS).getOrNull()
+            }
+        }
+        return found.values.toList()
     }
 
     /**
