@@ -10,6 +10,11 @@ import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
 import com.music.bitchord.data.settings.AppSettings
+import com.music.bitchord.data.settings.LocalTranslationEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 
@@ -53,7 +58,13 @@ object OnDeviceTranslator {
         val app = context.applicationContext
         LyricsTranslation.online = { isOnline(app) }
         LyricsTranslation.localEnabled = { AppSettings.onDeviceTranslation.value }
-        LyricsTranslation.localTranslator = { lines, target -> translate(lines, target) }
+        LyricsTranslation.localTranslator = { lines, target -> translateLocally(lines, target) }
+        LyricsTranslation.llmTranslator = { lines, target -> LlmTranslator.translate(lines, target) }
+        LyricsTranslation.onTranslated = { source, target ->
+            if (AppSettings.onDeviceTranslation.value && AppSettings.localTranslationEngine.value != LocalTranslationEngine.NANO) {
+                preloadScope.launch { MlKitTranslator.preload(source, target) }
+            }
+        }
     }
 
     private fun isOnline(context: Context): Boolean {
@@ -62,6 +73,18 @@ object OnDeviceTranslator {
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
+
+    private val preloadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Picks the engine: Nano where the person asked for it or where it is there, ML Kit otherwise. */
+    private suspend fun translateLocally(lines: List<String>, target: String): List<String>? =
+        when (AppSettings.localTranslationEngine.value) {
+            LocalTranslationEngine.NANO -> translate(lines, target)
+            LocalTranslationEngine.MLKIT -> MlKitTranslator.translate(lines, target)
+            LocalTranslationEngine.AUTO ->
+                if (status() == Support.AVAILABLE) translate(lines, target) ?: MlKitTranslator.translate(lines, target)
+                else MlKitTranslator.translate(lines, target)
+        }
 
     /** One numbered line in, one numbered line out, in chunks the small model can hold. */
     private suspend fun translate(lines: List<String>, target: String): List<String>? {

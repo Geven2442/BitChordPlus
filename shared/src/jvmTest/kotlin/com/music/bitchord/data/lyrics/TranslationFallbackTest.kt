@@ -92,4 +92,67 @@ class TranslationFallbackTest {
         assertTrue(LyricsTranslation.sameLanguage("en-US", "en"))
         assertTrue(LyricsTranslation.sameLanguage("iw", "he"))
     }
+
+    private fun resetHooks() {
+        LyricsTranslation.localEnabled = { false }
+        LyricsTranslation.online = { true }
+        LyricsTranslation.localTranslator = null
+        LyricsTranslation.llmTranslator = null
+    }
+
+    @Test
+    fun offlineUsesTheLocalEngine(): Unit = runBlocking<Unit> {
+        server.dispatcher = FakeTranslate(breakMarkers = false, detected = "en") { it.uppercase() }
+        LyricsTranslation.localEnabled = { true }
+        LyricsTranslation.online = { false }
+        LyricsTranslation.localTranslator = { l, _ -> l.map { "L:$it" } }
+        try {
+            val result = LyricsTranslation.translate("t4", lines("hello", "bye"), "fr")
+            val translated = assertIs<LyricsTranslation.Result.Translated>(result)
+            assertEquals(listOf("L:hello", "L:bye"), translated.lines.map { it.text })
+            assertEquals(0, server.requestCount)
+        } finally {
+            resetHooks()
+        }
+    }
+
+    @Test
+    fun googleFailureFallsBackToTheLocalEngine(): Unit = runBlocking<Unit> {
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest) = MockResponse.Builder().code(500).build()
+        }
+        LyricsTranslation.localEnabled = { true }
+        LyricsTranslation.localTranslator = { l, _ -> l.map { "L:$it" } }
+        try {
+            val result = LyricsTranslation.translate("t5", lines("hello", "bye"), "fr")
+            assertEquals(listOf("L:hello", "L:bye"), assertIs<LyricsTranslation.Result.Translated>(result).lines.map { it.text })
+        } finally {
+            resetHooks()
+        }
+    }
+
+    @Test
+    fun aConfiguredModelIsTriedBeforeGoogle(): Unit = runBlocking<Unit> {
+        server.dispatcher = FakeTranslate(breakMarkers = false, detected = "en") { it.uppercase() }
+        LyricsTranslation.llmTranslator = { l, _ -> l.map { "M:$it" } }
+        try {
+            val result = LyricsTranslation.translate("t6", lines("hello", "bye"), "fr")
+            assertEquals(listOf("M:hello", "M:bye"), assertIs<LyricsTranslation.Result.Translated>(result).lines.map { it.text })
+            assertEquals(0, server.requestCount)
+        } finally {
+            resetHooks()
+        }
+    }
+
+    @Test
+    fun aFailingModelFallsBackToGoogle(): Unit = runBlocking<Unit> {
+        server.dispatcher = FakeTranslate(breakMarkers = false, detected = "en") { it.uppercase() }
+        LyricsTranslation.llmTranslator = { _, _ -> null }
+        try {
+            val result = LyricsTranslation.translate("t7", lines("hello", "bye"), "fr")
+            assertEquals(listOf("HELLO", "BYE"), assertIs<LyricsTranslation.Result.Translated>(result).lines.map { it.text })
+        } finally {
+            resetHooks()
+        }
+    }
 }

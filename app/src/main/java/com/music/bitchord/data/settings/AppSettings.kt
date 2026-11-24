@@ -114,6 +114,12 @@ enum class BitPerfectMode {
  */
 enum class VideoQualityMode { AUTO, HIGH, SAVER }
 
+/** Which on-device engine translates lyrics offline. AUTO prefers Gemini Nano and uses ML Kit where Nano is missing. */
+enum class LocalTranslationEngine { AUTO, NANO, MLKIT }
+
+/** An online language model that can translate a whole song with its context. */
+enum class LlmProvider { OFF, GEMINI, OPENAI, CLAUDE }
+
 enum class DownloadQuality(
     /** Ceiling for the YouTube Opus ladder. [Int.MAX_VALUE] means "whichever rung is best". */
     val maxKbps: Int,
@@ -699,6 +705,11 @@ object AppSettings {
     val carLyricsTranslation = MutableStateFlow(false)
     val phoneLyricsTranslation = MutableStateFlow(false)
     val onDeviceTranslation = MutableStateFlow(false)
+    val localTranslationEngine = MutableStateFlow(LocalTranslationEngine.AUTO)
+    val llmProvider = MutableStateFlow(LlmProvider.OFF)
+    val llmModel = MutableStateFlow("")
+    val llmBaseUrl = MutableStateFlow("")
+    val llmApiKey = MutableStateFlow("")
     /** Experimental: phone lyric line broken onto its own line inside the title (Now Bar / Dynamic island). */
     val phoneLyricsNewline = MutableStateFlow(false)
 
@@ -1227,6 +1238,15 @@ object AppSettings {
         carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
         phoneLyricsTranslation.value = prefs.getBoolean(KEY_PHONE_LYRICS_TRANSLATION, false)
         onDeviceTranslation.value = prefs.getBoolean(KEY_ON_DEVICE_TRANSLATION, false)
+        localTranslationEngine.value = runCatching {
+            LocalTranslationEngine.valueOf(prefs.getString(KEY_LOCAL_TRANSLATION_ENGINE, null) ?: "")
+        }.getOrDefault(LocalTranslationEngine.AUTO)
+        llmProvider.value = runCatching {
+            LlmProvider.valueOf(prefs.getString(KEY_LLM_PROVIDER, null) ?: "")
+        }.getOrDefault(LlmProvider.OFF)
+        llmModel.value = prefs.getString(KEY_LLM_MODEL, "").orEmpty()
+        llmBaseUrl.value = prefs.getString(KEY_LLM_BASE_URL, "").orEmpty()
+        llmApiKey.value = secret(KEY_LLM_API_KEY)
         phoneLyricsNewline.value = prefs.getBoolean(KEY_PHONE_LYRICS_NEWLINE, false)
         lyricsWhenScreenOff.value = prefs.getBoolean(KEY_LYRICS_WHEN_SCREEN_OFF, false)
         voiceControl.value = prefs.getBoolean(KEY_VOICE_CONTROL, false)
@@ -1841,6 +1861,31 @@ object AppSettings {
     fun setCarLyricsTranslation(value: Boolean) {
         carLyricsTranslation.value = value
         prefs.edit().putBoolean(KEY_CAR_LYRICS_TRANSLATION, value).apply()
+    }
+
+    fun setLocalTranslationEngine(value: LocalTranslationEngine) {
+        localTranslationEngine.value = value
+        prefs.edit().putString(KEY_LOCAL_TRANSLATION_ENGINE, value.name).apply()
+    }
+
+    fun setLlmProvider(value: LlmProvider) {
+        llmProvider.value = value
+        prefs.edit().putString(KEY_LLM_PROVIDER, value.name).apply()
+    }
+
+    fun setLlmModel(value: String) {
+        llmModel.value = value
+        prefs.edit().putString(KEY_LLM_MODEL, value).apply()
+    }
+
+    fun setLlmBaseUrl(value: String) {
+        llmBaseUrl.value = value
+        prefs.edit().putString(KEY_LLM_BASE_URL, value).apply()
+    }
+
+    fun setLlmApiKey(value: String) {
+        llmApiKey.value = value
+        putSecret(KEY_LLM_API_KEY, value)
     }
 
     fun setOnDeviceTranslation(value: Boolean) {
@@ -2672,6 +2717,11 @@ object AppSettings {
     private const val KEY_CAR_LYRICS_TRANSLATION = "car_lyrics_translation"
     private const val KEY_PHONE_LYRICS_TRANSLATION = "phone_lyrics_translation"
     private const val KEY_ON_DEVICE_TRANSLATION = "on_device_translation"
+    private const val KEY_LOCAL_TRANSLATION_ENGINE = "local_translation_engine"
+    private const val KEY_LLM_PROVIDER = "llm_provider"
+    private const val KEY_LLM_MODEL = "llm_model"
+    private const val KEY_LLM_BASE_URL = "llm_base_url"
+    private const val KEY_LLM_API_KEY = "llm_api_key"
     private const val KEY_PHONE_LYRICS_NEWLINE = "phone_lyrics_newline"
     private const val KEY_LYRICS_WHEN_SCREEN_OFF = "lyrics_when_screen_off"
     private const val KEY_LYRIC_LEAD_MS = "lyric_lead_ms"

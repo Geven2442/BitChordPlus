@@ -122,6 +122,16 @@ object LyricsTranslation {
     var localEnabled: () -> Boolean = { false }
     var online: () -> Boolean = { true }
     var localTranslator: (suspend (lines: List<String>, target: String) -> List<String>?)? = null
+
+    /**
+     * An online language model the person supplied a key for. It sees the whole
+     * song at once, so it is tried first while online; null means it is not set
+     * up or failed, and Google's service answers as before.
+     */
+    var llmTranslator: (suspend (lines: List<String>, target: String) -> List<String>?)? = null
+
+    /** Told after Google's service has translated a song, so an offline engine can fetch what it needs. */
+    var onTranslated: (sourceLanguage: String, target: String) -> Unit = { _, _ -> }
     private val client by lazy {
         Http.client.newBuilder()
             .callTimeout(12, TimeUnit.SECONDS)
@@ -189,6 +199,9 @@ object LyricsTranslation {
         if (localEnabled() && !online()) {
             localResult(lines, slots, target)?.let { return it }
         }
+        if (online()) {
+            llmResult(lines, slots, target, cacheKey)?.let { return it }
+        }
 
         val batches = batches(slots)
         val answers = coroutineScope {
@@ -250,6 +263,7 @@ object LyricsTranslation {
         )
         memory.put(cacheKey, entry)
         writeCache(cacheKey, entry)
+        runCatching { onTranslated(source, target) }
 
         // Same base language but a different script (e.g. Simplified lyrics
         // with Traditional chosen) is a real conversion; only call it "same
@@ -265,6 +279,22 @@ object LyricsTranslation {
                 fromCache = false,
             )
         }
+    }
+
+    private suspend fun llmResult(
+        lines: List<LyricLine>,
+        slots: List<TextSlot>,
+        target: String,
+        cacheKey: String,
+    ): Result? {
+        val engine = llmTranslator ?: return null
+        val out = runCatching { engine(slots.map { it.text }, target) }.getOrNull() ?: return null
+        if (out.size != slots.size || out.any { it.isBlank() }) return null
+        val entry = CachedTranslation(sourceLanguage = "und", targetLanguage = target, texts = out)
+        memory.put(cacheKey, entry)
+        writeCache(cacheKey, entry)
+        if (unchangedWeight(slots, out) * 10 >= slots.sumOf { it.text.length } * 9) return Result.SameLanguage(target)
+        return Result.Translated(rebuild(lines, slots, out), sourceLanguage = "und", fromCache = false)
     }
 
     private suspend fun localResult(lines: List<LyricLine>, slots: List<TextSlot>, target: String): Result? {

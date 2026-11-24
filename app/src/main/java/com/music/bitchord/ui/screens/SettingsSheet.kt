@@ -101,6 +101,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -159,7 +160,10 @@ import com.music.bitchord.data.LocalMediaRepository
 import com.music.bitchord.data.NerdStats
 import com.music.bitchord.data.scrobbling.LastFM
 import com.music.bitchord.data.listentogether.ListenTogether
+import com.music.bitchord.data.lyrics.LlmTranslator
 import com.music.bitchord.data.lyrics.OnDeviceTranslator
+import com.music.bitchord.data.settings.LlmProvider
+import com.music.bitchord.data.settings.LocalTranslationEngine
 import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.data.settings.VideoQualityMode
 import com.music.bitchord.voice.VoiceControlService
@@ -1149,59 +1153,163 @@ fun SettingsScreen(
             }
         }
 
-        if (shows(SettingsCategory.ON_DEVICE_TRANSLATION)) SearchableSettingsGroup(search, header = stringResource(R.string.on_device_translation)) {
+        if (shows(SettingsCategory.ON_DEVICE_TRANSLATION)) {
             var support by remember { mutableStateOf(OnDeviceTranslator.Support.UNKNOWN) }
             var downloading by remember { mutableStateOf(false) }
             val translationScope = rememberCoroutineScope()
             LaunchedEffect(downloading) { support = OnDeviceTranslator.status() }
-            val usable = support == OnDeviceTranslator.Support.AVAILABLE ||
-                support == OnDeviceTranslator.Support.DOWNLOADABLE ||
-                support == OnDeviceTranslator.Support.DOWNLOADING
-            val onDeviceTitle = stringResource(R.string.on_device_translation_switch)
-            row(onDeviceTitle, "translation", "offline", "gemini", "nano", "on-device") {
-                SettingsRow(
-                    icon = SfIcons.Translate,
-                    title = onDeviceTitle,
-                    subtitle = stringResource(
-                        when (support) {
-                            OnDeviceTranslator.Support.UNKNOWN -> R.string.on_device_translation_checking
-                            OnDeviceTranslator.Support.UNSUPPORTED -> R.string.on_device_translation_unsupported
-                            else -> R.string.on_device_translation_subtitle
-                        },
-                    ),
-                    trailing = {
-                        IosSwitch(
-                            checked = onDeviceTranslation && usable,
-                            onCheckedChange = { if (usable) AppSettings.setOnDeviceTranslation(it) },
-                        )
-                    },
-                    onClick = { if (usable) AppSettings.setOnDeviceTranslation(!onDeviceTranslation) },
-                )
-            }
-            if (support == OnDeviceTranslator.Support.DOWNLOADABLE || support == OnDeviceTranslator.Support.DOWNLOADING) {
-                val downloadTitle = stringResource(R.string.on_device_translation_download)
-                row(downloadTitle, "download", "gemini", "nano", "model") {
+            val engine by AppSettings.localTranslationEngine.collectAsStateWithLifecycle()
+            val provider by AppSettings.llmProvider.collectAsStateWithLifecycle()
+            val llmModel by AppSettings.llmModel.collectAsStateWithLifecycle()
+            val llmBaseUrl by AppSettings.llmBaseUrl.collectAsStateWithLifecycle()
+            val llmApiKey by AppSettings.llmApiKey.collectAsStateWithLifecycle()
+            var editing by remember { mutableStateOf<LlmField?>(null) }
+
+            SearchableSettingsGroup(search, header = stringResource(R.string.on_device_translation)) {
+                val onDeviceTitle = stringResource(R.string.on_device_translation_switch)
+                row(onDeviceTitle, "translation", "offline", "gemini", "nano", "ml kit", "on-device") {
                     SettingsRow(
-                        icon = SfIcons.Download,
-                        title = downloadTitle,
-                        subtitle = stringResource(
-                            if (downloading || support == OnDeviceTranslator.Support.DOWNLOADING) {
-                                R.string.on_device_translation_downloading
-                            } else {
-                                R.string.on_device_translation_download_subtitle
-                            },
-                        ),
-                        onClick = {
-                            if (!downloading) {
-                                downloading = true
-                                translationScope.launch {
-                                    OnDeviceTranslator.download()
-                                    downloading = false
+                        icon = SfIcons.Translate,
+                        title = onDeviceTitle,
+                        subtitle = stringResource(R.string.on_device_translation_subtitle),
+                        trailing = { IosSwitch(checked = onDeviceTranslation, onCheckedChange = AppSettings::setOnDeviceTranslation) },
+                        onClick = { AppSettings.setOnDeviceTranslation(!onDeviceTranslation) },
+                    )
+                }
+                val engineTitle = stringResource(R.string.local_translation_engine)
+                row(engineTitle, "engine", "gemini", "nano", "ml kit") {
+                    SettingsRow(
+                        icon = SfIcons.Performance,
+                        title = engineTitle,
+                        subtitle = engine.localizedLabel(),
+                        onClick = { onOpenChoice(SettingsChoiceKind.LOCAL_TRANSLATION_ENGINE) },
+                    )
+                }
+                if (support == OnDeviceTranslator.Support.DOWNLOADABLE || support == OnDeviceTranslator.Support.DOWNLOADING) {
+                    val downloadTitle = stringResource(R.string.on_device_translation_download)
+                    row(downloadTitle, "download", "gemini", "nano", "model") {
+                        SettingsRow(
+                            icon = SfIcons.Download,
+                            title = downloadTitle,
+                            subtitle = stringResource(
+                                if (downloading || support == OnDeviceTranslator.Support.DOWNLOADING) {
+                                    R.string.on_device_translation_downloading
+                                } else {
+                                    R.string.on_device_translation_download_subtitle
+                                },
+                            ),
+                            onClick = {
+                                if (!downloading) {
+                                    downloading = true
+                                    translationScope.launch {
+                                        OnDeviceTranslator.download()
+                                        downloading = false
+                                    }
                                 }
-                            }
+                            },
+                        )
+                    }
+                }
+            }
+
+            SearchableSettingsGroup(search, header = stringResource(R.string.llm_translation)) {
+                val providerTitle = stringResource(R.string.llm_provider)
+                row(providerTitle, "api", "llm", "gemini", "openai", "claude", "model") {
+                    SettingsRow(
+                        icon = SfIcons.Language,
+                        title = providerTitle,
+                        subtitle = provider.localizedLabel(),
+                        onClick = { onOpenChoice(SettingsChoiceKind.LLM_PROVIDER) },
+                    )
+                }
+                if (provider != LlmProvider.OFF) {
+                    val keyTitle = stringResource(R.string.llm_api_key)
+                    row(keyTitle, "api", "key", "token") {
+                        SettingsRow(
+                            icon = SfIcons.Language,
+                            title = keyTitle,
+                            subtitle = stringResource(if (llmApiKey.isBlank()) R.string.llm_key_not_set else R.string.llm_key_set),
+                            onClick = { editing = LlmField.KEY },
+                        )
+                    }
+                    val modelTitle = stringResource(R.string.llm_model)
+                    row(modelTitle, "model") {
+                        SettingsRow(
+                            icon = SfIcons.Language,
+                            title = modelTitle,
+                            subtitle = llmModel.ifBlank { LlmTranslator.defaultModel(provider) },
+                            onClick = { editing = LlmField.MODEL },
+                        )
+                    }
+                    if (provider == LlmProvider.OPENAI) {
+                        val baseTitle = stringResource(R.string.llm_base_url)
+                        row(baseTitle, "url", "endpoint", "base") {
+                            SettingsRow(
+                                icon = SfIcons.Language,
+                                title = baseTitle,
+                                subtitle = llmBaseUrl.ifBlank { "https://api.openai.com/v1" },
+                                onClick = { editing = LlmField.BASE_URL },
+                            )
+                        }
+                    }
+                }
+            }
+
+            editing?.let { field ->
+                var input by remember(field) {
+                    mutableStateOf(
+                        when (field) {
+                            LlmField.KEY -> ""
+                            LlmField.MODEL -> llmModel
+                            LlmField.BASE_URL -> llmBaseUrl
                         },
                     )
                 }
+                AlertDialog(
+                    onDismissRequest = { editing = null },
+                    title = {
+                        Text(
+                            stringResource(
+                                when (field) {
+                                    LlmField.KEY -> R.string.llm_api_key
+                                    LlmField.MODEL -> R.string.llm_model
+                                    LlmField.BASE_URL -> R.string.llm_base_url
+                                },
+                            ),
+                        )
+                    },
+                    text = {
+                        OutlinedTextField(
+                            value = input,
+                            onValueChange = { input = it },
+                            singleLine = true,
+                            placeholder = {
+                                Text(
+                                    when (field) {
+                                        LlmField.MODEL -> LlmTranslator.defaultModel(provider)
+                                        LlmField.BASE_URL -> "https://api.openai.com/v1"
+                                        LlmField.KEY -> ""
+                                    },
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val value = input.trim()
+                            when (field) {
+                                LlmField.KEY -> AppSettings.setLlmApiKey(value)
+                                LlmField.MODEL -> AppSettings.setLlmModel(value)
+                                LlmField.BASE_URL -> AppSettings.setLlmBaseUrl(value)
+                            }
+                            editing = null
+                        }) { Text(stringResource(R.string.save)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { editing = null }) { Text(stringResource(R.string.cancel)) }
+                    },
+                )
             }
         }
 
@@ -3476,7 +3584,30 @@ enum class SettingsChoiceKind(@param:StringRes val title: Int) {
     AUTOMIX_PERFORMANCE(R.string.automix_performance),
     BIT_PERFECT(R.string.bit_perfect_output),
     FONT(R.string.font),
+    LOCAL_TRANSLATION_ENGINE(R.string.local_translation_engine),
+    LLM_PROVIDER(R.string.llm_provider),
 }
+
+private enum class LlmField { KEY, MODEL, BASE_URL }
+
+@Composable
+private fun LocalTranslationEngine.localizedLabel(): String = stringResource(
+    when (this) {
+        LocalTranslationEngine.AUTO -> R.string.engine_auto
+        LocalTranslationEngine.NANO -> R.string.engine_nano
+        LocalTranslationEngine.MLKIT -> R.string.engine_mlkit
+    },
+)
+
+@Composable
+private fun LlmProvider.localizedLabel(): String = stringResource(
+    when (this) {
+        LlmProvider.OFF -> R.string.llm_off
+        LlmProvider.GEMINI -> R.string.llm_gemini
+        LlmProvider.OPENAI -> R.string.llm_openai
+        LlmProvider.CLAUDE -> R.string.llm_claude
+    },
+)
 
 /** The main page's list of categories: a glyph and a name each, and a chevron into it. */
 @Composable
@@ -3608,6 +3739,49 @@ fun SettingsChoicePage(
                     // Leaving the mode needs no warning; entering it hands
                     // volume to the DAC, at full scale.
                     if (mode == BitPerfectMode.OFF) AppSettings.setBitPerfectMode(mode) else onConfirmBitPerfect(mode)
+                }
+            }
+
+            SettingsChoiceKind.LOCAL_TRANSLATION_ENGINE -> {
+                val selected by AppSettings.localTranslationEngine.collectAsStateWithLifecycle()
+                val support by produceState(OnDeviceTranslator.Support.UNKNOWN) { value = OnDeviceTranslator.status() }
+                val nanoOk = support == OnDeviceTranslator.Support.AVAILABLE ||
+                    support == OnDeviceTranslator.Support.DOWNLOADABLE ||
+                    support == OnDeviceTranslator.Support.DOWNLOADING
+                ChoiceGroup(
+                    options = LocalTranslationEngine.entries,
+                    selected = selected,
+                    label = { it.localizedLabel() },
+                    detail = {
+                        stringResource(
+                            when (it) {
+                                LocalTranslationEngine.AUTO -> R.string.engine_auto_detail
+                                LocalTranslationEngine.NANO ->
+                                    if (support == OnDeviceTranslator.Support.UNSUPPORTED) R.string.engine_nano_unsupported
+                                    else R.string.engine_nano_detail
+                                LocalTranslationEngine.MLKIT -> R.string.engine_mlkit_detail
+                            },
+                        )
+                    },
+                    enabled = { it != LocalTranslationEngine.NANO || nanoOk },
+                    footer = stringResource(R.string.engine_footer),
+                ) { engine ->
+                    AppSettings.setLocalTranslationEngine(engine)
+                    onChosen()
+                }
+            }
+
+            SettingsChoiceKind.LLM_PROVIDER -> {
+                val selected by AppSettings.llmProvider.collectAsStateWithLifecycle()
+                ChoiceGroup(
+                    options = LlmProvider.entries,
+                    selected = selected,
+                    label = { it.localizedLabel() },
+                    detail = null,
+                    footer = stringResource(R.string.llm_footer),
+                ) { provider ->
+                    AppSettings.setLlmProvider(provider)
+                    onChosen()
                 }
             }
 
