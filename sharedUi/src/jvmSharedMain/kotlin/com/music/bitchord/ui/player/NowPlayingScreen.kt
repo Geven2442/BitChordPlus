@@ -2664,6 +2664,7 @@ fun NowPlayingScreen(
                                 LyricsPanel(
                                     lines = lyrics.orEmpty(),
                                     subLines = lyricsTranslation.subLines,
+                                    midLines = lyricsTranslation.midLines,
                                     trackKey = song.videoId,
                                     playhead = lyricsPlayhead,
                                     looking = !lyricsUnavailable,
@@ -4351,6 +4352,7 @@ fun NowPlayingScreen(
                                     LyricsPanel(
                                         lines = lyrics.orEmpty(),
                                         subLines = lyricsTranslation.subLines,
+                                        midLines = lyricsTranslation.midLines,
                                         trackKey = song.videoId,
                                         playhead = lyricsPlayhead,
                                         looking = !lyricsUnavailable,

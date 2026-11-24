@@ -1620,4 +1620,6 @@
     <string name="llm_footer">有網路時，整首歌會送到這個提供者翻譯，能依上下文理解歌詞。金鑰只存在這支手機，歌詞只會傳給你選的提供者。失敗時會改用 Google 翻譯。API 用量可能由提供者收費。</string>
     <string name="artist_songs_found">已找到 %1$d 首</string>
     <string name="artist_songs_searching">目前找到 %1$d 首，還在查這位歌手的其他發行…</string>
+    <string name="lyrics_roman_and_translated">羅馬拼音與翻譯同時顯示</string>
+    <string name="lyrics_roman_and_translated_subtitle">翻譯歌詞時，在每行下方多顯示羅馬拼音（原文／拼音／翻譯三層）</string>
 </resources>

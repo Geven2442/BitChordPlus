@@ -270,6 +270,7 @@ fun SettingsScreen(
     val progressiveBlur by AppSettings.progressiveBlur.collectAsStateWithLifecycle()
     val liquidGlassSupported = isGlassSupported()
     val lyricsBlur by AppSettings.lyricsBlur.collectAsStateWithLifecycle()
+    val lyricsRomanAndTranslated by AppSettings.lyricsRomanizedAndTranslated.collectAsStateWithLifecycle()
     val animatedCanvas by AppSettings.animatedCanvas.collectAsStateWithLifecycle()
     val canvasOverCellular by AppSettings.canvasOverCellular.collectAsStateWithLifecycle()
     val signatureApiEnabled by AppSettings.signatureApiEnabled.collectAsStateWithLifecycle()
@@ -1850,6 +1851,21 @@ fun SettingsScreen(
                             )
                         },
                         onClick = { AppSettings.setLyricsBlur(!lyricsBlur) },
+                    )
+                }
+                val lyricsTripleTitle = stringResource(R.string.lyrics_roman_and_translated)
+                row(lyricsTripleTitle, "lyrics", "romanization", "translation") {
+                    SettingsRow(
+                        icon = SfIcons.Language,
+                        title = lyricsTripleTitle,
+                        subtitle = stringResource(R.string.lyrics_roman_and_translated_subtitle),
+                        trailing = {
+                            IosSwitch(
+                                checked = lyricsRomanAndTranslated,
+                                onCheckedChange = AppSettings::setLyricsRomanizedAndTranslated,
+                            )
+                        },
+                        onClick = { AppSettings.setLyricsRomanizedAndTranslated(!lyricsRomanAndTranslated) },
                     )
                 }
                 val lyricsSourcesTitle = stringResource(R.string.lyrics_sources)

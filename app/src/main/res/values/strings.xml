@@ -1585,4 +1585,6 @@
     <string name="llm_footer">While online, a whole song is sent to this provider for a translation that reads the lyrics in context. Your key stays on this phone and lyrics go only to the provider you pick. If it fails, Google Translate is used instead. API use may be billed by the provider.</string>
     <string name="artist_songs_found">Found %1$d songs</string>
     <string name="artist_songs_searching">Found %1$d songs so far — still looking through their releases…</string>
+    <string name="lyrics_roman_and_translated">Romanization and translation together</string>
+    <string name="lyrics_roman_and_translated_subtitle">Translated lyrics also show the romanization under each line</string>
 </resources>

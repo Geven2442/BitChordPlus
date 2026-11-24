@@ -1589,4 +1589,6 @@
     <string name="video_quality_mode_saver">数据节省模式</string>
     <string name="video_quality_mode_saver_detail">较低画质（360p）</string>
     <string name="video_quality_footer">音乐视频的默认画质，按当前连接类型应用。视频没有 1440p 或 4K 时，会使用它有的最高画质。在视频画面上手动选的画质优先。</string>
+    <string name="lyrics_roman_and_translated">罗马拼音与翻译同时显示</string>
+    <string name="lyrics_roman_and_translated_subtitle">翻译歌词时，在每行下方多显示罗马拼音（原文／拼音／翻译三层）</string>
 </resources>

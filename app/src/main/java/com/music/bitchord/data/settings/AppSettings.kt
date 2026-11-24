@@ -585,6 +585,9 @@ object AppSettings {
     /** What the lyrics were last left showing: "translated", "romanized" or "" (original). */
     val lyricsViewMode = MutableStateFlow("")
 
+    /** Translated lyrics also carry the romanization under each line (original / romanized / translated). */
+    val lyricsRomanizedAndTranslated = MutableStateFlow(false)
+
     /**
      * Which language the lyrics translate button translates *into*.
      *
@@ -1205,6 +1208,7 @@ object AppSettings {
         lyricsOffsetMs.value = prefs.getInt(KEY_LYRICS_OFFSET_MS, 0)
             .coerceIn(MIN_LYRICS_OFFSET_MS, MAX_LYRICS_OFFSET_MS)
         lyricsViewMode.value = prefs.getString(KEY_LYRICS_VIEW_MODE, "").orEmpty()
+        lyricsRomanizedAndTranslated.value = prefs.getBoolean(KEY_LYRICS_ROMAN_AND_TRANSLATED, false)
         translationLanguage.value = prefs.getString(KEY_TRANSLATION_LANGUAGE, "").orEmpty()
         if (highPerformanceMode.value) {
             reduceAnimation.value = false
@@ -1906,6 +1910,11 @@ object AppSettings {
     fun setKeepQueuedOnNewPlay(value: Boolean) {
         keepQueuedOnNewPlay.value = value
         prefs.edit().putBoolean(KEY_KEEP_QUEUED_ON_NEW_PLAY, value).apply()
+    }
+
+    fun setLyricsRomanizedAndTranslated(value: Boolean) {
+        lyricsRomanizedAndTranslated.value = value
+        prefs.edit().putBoolean(KEY_LYRICS_ROMAN_AND_TRANSLATED, value).apply()
     }
 
     fun setLyricsViewMode(value: String) {
@@ -2697,6 +2706,7 @@ object AppSettings {
     private const val KEY_LYRICS_BLUR = "lyrics_blur"
     private const val KEY_LYRICS_OFFSET_MS = "lyrics_offset_ms"
     private const val KEY_LYRICS_VIEW_MODE = "lyrics_view_mode"
+    private const val KEY_LYRICS_ROMAN_AND_TRANSLATED = "lyrics_roman_and_translated"
     private const val KEY_TRANSLATION_LANGUAGE = "translation_language"
     private const val KEY_ANIMATED_CANVAS = "animated_canvas"
     private const val KEY_CANVAS_OVER_CELLULAR = "canvas_over_cellular"

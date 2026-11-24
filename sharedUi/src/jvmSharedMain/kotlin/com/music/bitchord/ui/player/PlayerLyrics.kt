@@ -1793,6 +1793,8 @@ internal fun LyricsPanel(
      * under each original line. Null shows the originals alone.
      */
     subLines: List<LyricLine>? = null,
+    /** Romanization drawn between a line and [subLines], when both are wanted. */
+    midLines: List<LyricLine>? = null,
     trackKey: String,
     playhead: LyricPlayhead,
     /** Whether a lookup for this track is still in flight. */
@@ -1829,6 +1831,7 @@ internal fun LyricsPanel(
     val panelPlaying = isPlaying && active
     val clock = rememberLyricClock(trackKey, playhead, isPlaying, active)
     val subReveal = rememberSubLyricsReveal(subLines, trackKey)
+    val midReveal = rememberSubLyricsReveal(midLines, trackKey)
 
     val isSynced = remember(lines) { lines.any { it.timeMs > 0L } }
     // Only a song that actually names a second voice is laid out as one. A
@@ -2482,6 +2485,30 @@ internal fun LyricsPanel(
                         laneLocked = duet,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    midReveal.lines?.getOrNull(index)
+                        ?.takeIf { it.text.differsFrom(line.text) }
+                        ?.let { midLine ->
+                            PanelVoice(
+                                line = midLine,
+                                clock = clock,
+                                style = voiceStyle(subStyle, midLine.text, alignEnd, laneLocked = true),
+                                isActive = isActive,
+                                sung = sung,
+                                synced = isSynced,
+                                browsing = browsing,
+                                glowAlpha = 0f,
+                                room = 0.dp,
+                                alignEnd = alignEnd,
+                                laneLocked = true,
+                                rise = false,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .revealBelow(midReveal.progress)
+                                    .padding(start = GLOW_ROOM, end = GLOW_ROOM, bottom = GLOW_ROOM)
+                                    .offset(y = -SUB_LYRIC_TUCK)
+                                    .graphicsLayer { alpha = SUB_LYRIC_ALPHA },
+                            )
+                        }
                     // A line the service handed back unchanged ("falling
                     // down" in a Korean song) gets no second copy of itself.
                     sub?.takeIf { it.text.differsFrom(line.text) }?.let { subLine ->
@@ -3114,6 +3141,8 @@ internal class LyricsTranslationUi(
     val displayedLyrics: List<LyricLine>,
     /** Drawn small under each original line in the panel; null for none. */
     val subLines: List<LyricLine>?,
+    /** The romanization drawn between a line and its translation, when both are asked for. */
+    val midLines: List<LyricLine>?,
     val translationState: LyricsTranslationUiState,
     val romanizationState: LyricsTranslationUiState,
     val showingTranslation: Boolean,
@@ -3208,6 +3237,30 @@ internal fun rememberLyricsTranslation(
         LyricsDisplayMode.Original -> null
     }
     val translationScope = rememberCoroutineScope()
+    // The third layer, off unless asked for in Settings: while the translation
+    // is up, the romanization sits between each line and its translation.
+    val romanAndTranslated by PlayerSettings.lyricsRomanizedAndTranslated.collectAsStateWithLifecycle()
+    var extraRoman by remember(trackId, translationLanguage, lyrics) {
+        mutableStateOf<List<LyricLine>?>(null)
+    }
+    LaunchedEffect(romanAndTranslated, showingTranslation, trackId, translationLanguage, lyrics) {
+        val source = lyrics.orEmpty()
+        if (!romanAndTranslated || !showingTranslation || source.isEmpty() || extraRoman != null) {
+            return@LaunchedEffect
+        }
+        val ready = (romanizationState as? LyricsTranslationUiState.Ready)?.lines
+        if (ready != null) {
+            extraRoman = ready
+            return@LaunchedEffect
+        }
+        val result = PlayerPlatform.host.romanizeLyrics(
+            trackId = trackId,
+            lines = source,
+            targetLanguageTag = translationLanguage,
+        )
+        if (result is LyricsRomanizationResult.Romanized) extraRoman = result.lines
+    }
+    val lyricsMidLines = if (romanAndTranslated && showingTranslation) extraRoman else null
     // [auto] is the player restoring what the lyrics were last left showing:
     // it only ever turns translation on, and says nothing when it can't.
     val requestTranslation: (Boolean) -> Unit = requestTranslation@{ auto ->
@@ -3368,6 +3421,7 @@ internal fun rememberLyricsTranslation(
     return LyricsTranslationUi(
         displayedLyrics = displayedLyrics,
         subLines = lyricsSubLines,
+        midLines = lyricsMidLines,
         translationState = translationState,
         romanizationState = romanizationState,
         showingTranslation = showingTranslation,

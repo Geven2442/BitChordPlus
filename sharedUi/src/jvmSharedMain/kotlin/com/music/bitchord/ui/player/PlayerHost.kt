@@ -320,6 +320,8 @@ interface PlayerSettingsSource {
     val translationLanguage: StateFlow<String>
     /** What the lyrics were last left showing: "translated", "romanized" or "" (original). */
     val lyricsViewMode: StateFlow<String> get() = MutableStateFlow("")
+    /** Whether translated lyrics also show their romanization, as a third layer. */
+    val lyricsRomanizedAndTranslated: StateFlow<Boolean> get() = MutableStateFlow(false)
     val versionAlignmentInProgress: StateFlow<Boolean>
 
     fun setLastPlayerScreen(value: LastPlayerScreen)
