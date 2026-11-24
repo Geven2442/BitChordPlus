@@ -232,4 +232,14 @@ class QueueBuilderTest {
         assertEquals(null, QueueBuilder.coreKey("晴天 - Remix"))
         assertEquals(true, QueueBuilder.coreKey("姚曉棠 - 迷人的危險『test』") != null)
     }
+
+    @Test
+    fun `the same title in traditional and simplified is one recording`() {
+        val extra = QueueBuilder.extend(
+            existing = listOf(song("a", "一萬零一次沉溺", "李佳薇")),
+            candidates = listOf(song("b", "一万零一次沉溺", "李佳薇"), song("c", "Other", "X")),
+            limit = 10,
+        )
+        assertEquals(listOf("c"), extra.map { it.videoId })
+    }
 }

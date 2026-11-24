@@ -974,6 +974,11 @@ class PlaybackService : MediaLibraryService() {
      */
     private val sessionSongHistory = mutableListOf<Song>()
 
+    private fun rememberPlayed(song: Song) {
+        sessionSongHistory += song
+        if (sessionSongHistory.size > 200) sessionSongHistory.removeAt(0)
+    }
+
     private var serviceLyricsJob: Job? = null
     private var serviceLyrics: List<LyricLine>? = null
     /** Translation of [serviceLyrics] for the car line, when that option is on. */
@@ -3884,7 +3889,7 @@ class PlaybackService : MediaLibraryService() {
             return
         }
         val current = exoPlayer.currentMediaItem?.toSong() ?: return
-        if (AppSettings.dontRepeatSuggestions.value) sessionSongHistory += current
+        rememberPlayed(current)
         // In a party the server's queue is the one being topped up, and this
         // player's copy of it lags behind by however long reconcile is held off
         // — read from the copy, a batch that had already landed counted as
@@ -3916,11 +3921,9 @@ class PlaybackService : MediaLibraryService() {
                 val queueSongs = (0 until activePlayer.mediaItemCount)
                     .map { activePlayer.getMediaItemAt(it).toSong() } +
                     activeParty.queue.items.takeIf { activeParty.inParty }.orEmpty().map { it.toSong() }
-                val existing = if (AppSettings.dontRepeatSuggestions.value) {
-                    queueSongs + sessionSongHistory
-                } else {
-                    queueSongs
-                }
+                // Songs that already aged out of the 25-row history still count
+                // as heard, so a radio never offers them back.
+                val existing = queueSongs + sessionSongHistory
                 val seedSong = if (seedBack == 0) {
                     current
                 } else {
