@@ -41,6 +41,7 @@ object AppUpdateChecker {
     )
 
     private const val CACHE_SUBDIR = "updates"
+    private const val MAX_RESUMES = 8
     private const val CHECK_INTERVAL_MS = 10 * 60 * 1000L
 
     private const val LATEST_RELEASE_URL =
@@ -161,37 +162,58 @@ object AppUpdateChecker {
 
         runCatching {
             val dir = File(context.cacheDir, CACHE_SUBDIR).apply { mkdirs() }
-            // Drop anything left over from an earlier attempt.
-            dir.listFiles()?.forEach { it.delete() }
             val target = File(dir, "bitchord-${info.version}.apk")
+            val part = File(dir, "bitchord-${info.version}.apk.part")
+            // Anything left from another version goes; this version's partial
+            // file stays so a dropped connection resumes instead of restarting.
+            dir.listFiles()?.forEach { if (it != part) it.delete() }
 
-            val request = Request.Builder().url(url).build()
-            Http.client.newCall(request).execute().use { response ->
-                check(response.isSuccessful) { "Download failed: HTTP ${response.code}" }
-                val body = response.body ?: error("Empty download body")
-                val total = body.contentLength().takeIf { it > 0 }
-
-                body.byteStream().use { input ->
-                    target.outputStream().use { output ->
-                        val buffer = ByteArray(64 * 1024)
-                        var readTotal = 0L
-                        while (true) {
-                            if (downloadCancelled) {
-                                _download.value = DownloadState.Idle
-                                return@withContext
-                            }
-                            val read = input.read(buffer)
-                            if (read == -1) break
-                            output.write(buffer, 0, read)
-                            readTotal += read
-                            total?.let {
-                                _download.value =
-                                    DownloadState.Downloading((readTotal.toFloat() / it).coerceIn(0f, 1f))
+            // The system drops a background app's sockets ("Software caused
+            // connection abort"), and a 60 MB APK over mobile data meets that
+            // often, so a failure resumes from the bytes already on disk.
+            var attempts = 0
+            while (true) {
+                try {
+                    val have = part.length()
+                    val request = Request.Builder().url(url)
+                        .apply { if (have > 0) header("Range", "bytes=$have-") }
+                        .build()
+                    Http.client.newCall(request).execute().use { response ->
+                        // 416: the file on disk is already the whole APK.
+                        if (response.code == 416) return@use
+                        check(response.isSuccessful) { "Download failed: HTTP ${response.code}" }
+                        val body = response.body ?: error("Empty download body")
+                        val resumed = response.code == 206
+                        val offset = if (resumed) have else 0L
+                        val total = body.contentLength().takeIf { it > 0 }?.plus(offset)
+                        body.byteStream().use { input ->
+                            java.io.FileOutputStream(part, resumed).use { output ->
+                                val buffer = ByteArray(64 * 1024)
+                                var readTotal = offset
+                                while (true) {
+                                    if (downloadCancelled) {
+                                        _download.value = DownloadState.Idle
+                                        return@withContext
+                                    }
+                                    val read = input.read(buffer)
+                                    if (read == -1) break
+                                    output.write(buffer, 0, read)
+                                    readTotal += read
+                                    total?.let {
+                                        _download.value =
+                                            DownloadState.Downloading((readTotal.toFloat() / it).coerceIn(0f, 1f))
+                                    }
+                                }
                             }
                         }
                     }
+                    break
+                } catch (e: java.io.IOException) {
+                    if (downloadCancelled || ++attempts > MAX_RESUMES) throw e
+                    kotlinx.coroutines.delay(2_000L * attempts)
                 }
             }
+            check(part.renameTo(target)) { "Could not finish the downloaded file" }
             _download.value = DownloadState.Ready(target)
         }.onFailure { error ->
             _download.value = if (downloadCancelled) {
