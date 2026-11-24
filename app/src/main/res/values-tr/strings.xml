@@ -1559,4 +1559,6 @@
     <string name="voice_no_permission">Microphone permission needed</string>
     <string name="voice_not_understood">Command not understood</string>
     <string name="voice_not_available">No speech recognition available on this phone</string>
+    <string name="phone_lyrics_translation">Translated lyrics in status bar and lock screen</string>
+    <string name="phone_lyrics_translation_subtitle">The status bar, lock screen and notification show the translated line in the lyrics translation language, the original until it arrives (needs internet)</string>
 </resources>

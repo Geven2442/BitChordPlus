@@ -1578,4 +1578,6 @@
     <string name="voice_no_permission">需要麥克風權限</string>
     <string name="voice_not_understood">沒聽懂指令</string>
     <string name="voice_not_available">這支手機沒有可用的語音辨識</string>
+    <string name="phone_lyrics_translation">状态栏与锁屏歌词显示翻译</string>
+    <string name="phone_lyrics_translation_subtitle">状态栏、锁屏与通知的歌词改为显示翻译后的文字，翻译语言跟随歌词翻译设置；翻译送达前先显示原文（需要网络）</string>
 </resources>

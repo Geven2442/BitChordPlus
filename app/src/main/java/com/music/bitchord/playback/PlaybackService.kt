@@ -8823,14 +8823,22 @@ class PlaybackService : MediaLibraryService() {
         // lag behind a metadata change, so the line is sent early.
         val pos = (crossfade?.loopPositionMs() ?: exoPlayer.currentPosition) + AppSettings.lyricLeadMs.value
         var carTranslated: String? = null
+        var originalLine: String? = null
         val subtitleText = if (lines != null && lines.isNotEmpty() && AppSettings.syncedLyrics.value) {
             val idx = lines.indexOfLast { it.timeMs <= pos }
             val currentLine = lines.getOrNull(idx)
             if (currentLine != null && !currentLine.isGap && currentLine.text.isNotBlank()) {
-                if (AppSettings.carLyrics.value && AppSettings.carLyricsTranslation.value) {
+                val wantCar = AppSettings.carLyrics.value && AppSettings.carLyricsTranslation.value
+                val wantPhone = AppSettings.phoneLyricsTranslation.value
+                if (wantCar || wantPhone) {
                     carTranslated = carTranslationFor(lines, currentSong.videoId, idx, currentLine)
                 }
-                "♪ ${currentLine.text}"
+                originalLine = currentLine.text.trim()
+                // Phone surfaces show the translation in place of the line once it
+                // has arrived; until then (or when the song is already in the
+                // target language) the original stands.
+                val shown = if (wantPhone) carTranslated?.takeIf { it.isNotBlank() } ?: currentLine.text else currentLine.text
+                "♪ $shown"
             } else {
                 currentSong.artist
             }
@@ -8846,9 +8854,9 @@ class PlaybackService : MediaLibraryService() {
             currentSong.artist,
         )
         val newCarLine = if (AppSettings.carLyrics.value && playingNow && carConnected()) {
-            if (currentLyricLine != null && !carTranslated.isNullOrBlank()) "$currentLyricLine ／ $carTranslated" else currentLyricLine
+            if (originalLine != null && AppSettings.carLyricsTranslation.value && !carTranslated.isNullOrBlank()) "$originalLine ／ $carTranslated" else originalLine
         } else null
-        val surfacesKey = "${AppSettings.carLyricsOnTitle.value}|${AppSettings.carLyricsTranslation.value}|${AppSettings.phoneLyrics.value}|${AppSettings.phoneLyricsOnTitle.value}|${AppSettings.phoneLyricsNewline.value}"
+        val surfacesKey = "${AppSettings.carLyricsOnTitle.value}|${AppSettings.carLyricsTranslation.value}|${AppSettings.phoneLyricsTranslation.value}|${AppSettings.phoneLyrics.value}|${AppSettings.phoneLyricsOnTitle.value}|${AppSettings.phoneLyricsNewline.value}"
         var announce = false
         if (newCarLine != carLyricLine || surfacesKey != lyricSurfacesKey) {
             carLyricLine = newCarLine

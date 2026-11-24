@@ -274,6 +274,7 @@ fun SettingsScreen(
     val carLyrics by AppSettings.carLyrics.collectAsStateWithLifecycle()
     val carLyricsOnTitle by AppSettings.carLyricsOnTitle.collectAsStateWithLifecycle()
     val carLyricsTranslation by AppSettings.carLyricsTranslation.collectAsStateWithLifecycle()
+    val phoneLyricsTranslation by AppSettings.phoneLyricsTranslation.collectAsStateWithLifecycle()
     val phoneLyrics by AppSettings.phoneLyrics.collectAsStateWithLifecycle()
     val phoneLyricsOnTitle by AppSettings.phoneLyricsOnTitle.collectAsStateWithLifecycle()
     val phoneLyricsNewline by AppSettings.phoneLyricsNewline.collectAsStateWithLifecycle()
@@ -1624,6 +1625,16 @@ fun SettingsScreen(
                             onClick = { AppSettings.setCarLyricsOnTitle(!carLyricsOnTitle) },
                         )
                     }
+                }
+                val phoneTranslationTitle = stringResource(R.string.phone_lyrics_translation)
+                row(phoneTranslationTitle, "lyrics", "status", "bar", "lock", "translation") {
+                    SettingsRow(
+                        icon = SfIcons.Language,
+                        title = phoneTranslationTitle,
+                        subtitle = stringResource(R.string.phone_lyrics_translation_subtitle),
+                        trailing = { IosSwitch(checked = phoneLyricsTranslation, onCheckedChange = AppSettings::setPhoneLyricsTranslation) },
+                        onClick = { AppSettings.setPhoneLyricsTranslation(!phoneLyricsTranslation) },
+                    )
                 }
                 if (carLyrics) {
                     val carTranslationTitle = stringResource(R.string.car_lyrics_translation)
