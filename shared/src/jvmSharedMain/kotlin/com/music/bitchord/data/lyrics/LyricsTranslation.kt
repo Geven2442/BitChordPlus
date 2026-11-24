@@ -76,7 +76,7 @@ object LyricsTranslation {
     // Version 4: Simplified and Traditional Chinese are no longer treated as
     // the same language, so cached "already in your language" answers for
     // Chinese lyrics must be dropped.
-    private const val CACHE_VERSION = 4
+    private const val CACHE_VERSION = 5
     private const val CACHE_DIRECTORY = "lyrics_translation_v4"
     private const val MAX_CACHE_BYTES = 2L * 1024L * 1024L
     private const val MAX_BATCH_CHARS = 3_500
@@ -225,6 +225,7 @@ object LyricsTranslation {
                 translated = retried
             }
         }
+        translated = translateLeftoverScripts(slots, translated, target)
         val entry = CachedTranslation(
             sourceLanguage = source,
             targetLanguage = target,
@@ -247,6 +248,47 @@ object LyricsTranslation {
                 fromCache = false,
             )
         }
+    }
+
+    /**
+     * A whole song goes out under one auto-detected source language, so the
+     * Korean or Japanese lines of an English-led song came back untouched, or
+     * with a few words converted and the rest left in place. Lines that still
+     * carry Hangul or kana after the first pass are sent again with that
+     * language named, one request per language.
+     */
+    private suspend fun translateLeftoverScripts(
+        slots: List<TextSlot>,
+        translated: List<String>,
+        target: String,
+    ): List<String> {
+        fun scriptOf(text: String): String? {
+            var hangul = false
+            var kana = false
+            text.codePoints().forEach { cp ->
+                when (Character.UnicodeScript.of(cp)) {
+                    Character.UnicodeScript.HANGUL -> hangul = true
+                    Character.UnicodeScript.HIRAGANA, Character.UnicodeScript.KATAKANA -> kana = true
+                    else -> Unit
+                }
+            }
+            return if (kana) "ja" else if (hangul) "ko" else null
+        }
+        val result = translated.toMutableList()
+        val byLanguage = slots.indices
+            .filter { scriptOf(translated[it]) != null }
+            .groupBy { scriptOf(translated[it])!! }
+            .filterKeys { canonicalLanguage(it) != canonicalLanguage(target) }
+        for ((language, indices) in byLanguage) {
+            val subset = indices.map { slots[it] }
+            val answer = requestBatch(Batch(subset, payload(subset)), target, language) ?: continue
+            if (answer.translations.size != indices.size) continue
+            indices.forEachIndexed { n, at ->
+                val better = answer.translations[n]
+                if (better.isNotBlank() && scriptOf(better) == null) result[at] = better
+            }
+        }
+        return result
     }
 
     /** Translates each line of [batch] on its own, without markers. */
