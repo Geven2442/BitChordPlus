@@ -76,7 +76,7 @@ object LyricsTranslation {
     // Version 4: Simplified and Traditional Chinese are no longer treated as
     // the same language, so cached "already in your language" answers for
     // Chinese lyrics must be dropped.
-    private const val CACHE_VERSION = 6
+    private const val CACHE_VERSION = 7
     private const val CACHE_DIRECTORY = "lyrics_translation_v4"
     private const val MAX_CACHE_BYTES = 2L * 1024L * 1024L
     private const val MAX_BATCH_CHARS = 3_500
@@ -762,6 +762,10 @@ object LyricsTranslation {
 
     private fun cacheKey(trackId: String, target: String, slots: List<TextSlot>): String {
         val source = buildString {
+            // The version is part of the key, not only a field in the entry: a
+            // field equal to its default is left out of the file, so a bump
+            // alone never made an older answer miss.
+            append("v").append(CACHE_VERSION).append('\u0000')
             append(trackId).append('\u0000').append(target)
             slots.forEach { append('\u0000').append(it.text) }
         }
