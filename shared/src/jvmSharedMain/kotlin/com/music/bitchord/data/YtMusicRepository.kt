@@ -31,6 +31,11 @@ import com.music.bitchord.data.sources.TrackMatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -1164,6 +1169,68 @@ object YtMusicRepository {
             val resolvedSongs = if (!fullSongs.isNullOrEmpty()) fullSongs else page.songs
             val withSearched = resolvedSongs + searchedArtistSongs(browseId, page.name, resolvedSongs)
             page.copy(songs = withSearched, sections = fullShelves)
+        }
+    }
+
+    /**
+     * Every song the artist has put out, gathered from their releases rather
+     * than from YouTube Music's own Songs list, which leaves out most singles.
+     * Emits the growing list as releases come in, starting with [known], so a
+     * screen can show songs at once and fill the rest in. Each release is read
+     * for its tracks; a row is kept when it is this artist's (or names nobody),
+     * is not a music video, and is not a second copy of a song already held —
+     * the album, single and search cuts of one song count once.
+     */
+    fun artistDiscography(
+        artistId: String,
+        name: String?,
+        shelves: List<HomeShelf>,
+        known: List<Song>,
+    ): Flow<List<Song>> = channelFlow {
+        val releases = shelves.flatMap { it.items }
+            .filter { it.browseId?.startsWith("MPRE") == true && !it.isVideo }
+            .distinctBy { it.browseId }
+        val held = ArrayList<Song>(known)
+        send(held.toList())
+        val gate = Semaphore(3)
+        val lock = Mutex()
+        val wanted = name?.takeIf { normalizedArtistName(it).isNotEmpty() }
+        for (release in releases) {
+            launch {
+                gate.withPermit {
+                    val tracks = runCatching { songsPaged(release.browseId!!) }.getOrNull().orEmpty()
+                    val mine = tracks.filter { song ->
+                        !song.isVideo && (
+                            song.artist.isBlank() ||
+                                song.artistId == artistId ||
+                                song.artists.any { it.browseId == artistId } ||
+                                (wanted != null && QueueBuilder.artistSet(song.artist).any { isExactArtistMatch(it, wanted) })
+                            )
+                    }.map {
+                        it.copy(
+                            artist = it.artist.ifBlank { name.orEmpty() },
+                            thumbnailUrl = it.thumbnailUrl ?: release.thumbnailUrl,
+                            albumName = it.albumName ?: release.title,
+                        )
+                    }
+                    lock.withLock {
+                        var changed = false
+                        for (song in mine) {
+                            if (held.any {
+                                    it.videoId == song.videoId ||
+                                        QueueBuilder.isSameRecording(it, song) ||
+                                        QueueBuilder.isSameTitle(it, song)
+                                }
+                            ) {
+                                continue
+                            }
+                            held += song
+                            changed = true
+                        }
+                        if (changed) send(held.toList())
+                    }
+                }
+            }
         }
     }
 

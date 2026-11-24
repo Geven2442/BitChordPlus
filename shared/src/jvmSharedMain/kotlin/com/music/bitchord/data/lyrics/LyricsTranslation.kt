@@ -76,7 +76,7 @@ object LyricsTranslation {
     // Version 4: Simplified and Traditional Chinese are no longer treated as
     // the same language, so cached "already in your language" answers for
     // Chinese lyrics must be dropped.
-    private const val CACHE_VERSION = 5
+    private const val CACHE_VERSION = 6
     private const val CACHE_DIRECTORY = "lyrics_translation_v4"
     private const val MAX_CACHE_BYTES = 2L * 1024L * 1024L
     private const val MAX_BATCH_CHARS = 3_500
@@ -342,7 +342,58 @@ object LyricsTranslation {
                 if (better.isNotBlank() && scriptOf(better) == null) result[at] = better
             }
         }
+        // Lines that mix English with Hangul or kana can still come back half
+        // done. Those are cut into runs by script, each run is translated under
+        // its own language, and the pieces are put back in order.
+        val stubborn = slots.indices.filter { scriptOf(result[it]) != null && scriptOf(slots[it].text) != null }
+        if (stubborn.isNotEmpty()) {
+            val pieces = stubborn.associateWith { splitRuns(slots[it].text) }
+            for (language in listOf("ko", "ja", "en")) {
+                if (canonicalLanguage(language) == canonicalLanguage(target)) continue
+                val wanted = pieces.values.flatten().filter { it.language == language && it.hasLetters }
+                if (wanted.isEmpty()) continue
+                val subset = wanted.map { TextSlot(-1, false, it.text, false) }
+                val answer = requestBatch(Batch(subset, payload(subset)), target, language) ?: continue
+                if (answer.translations.size != wanted.size) continue
+                wanted.forEachIndexed { n, run -> run.translated = answer.translations[n] }
+            }
+            for ((at, runs) in pieces) {
+                if (runs.any { it.hasLetters && it.translated == null }) continue
+                val joined = runs.joinToString(" ") { it.translated ?: it.text }.replace(Regex("\\s+"), " ").trim()
+                if (joined.isNotBlank() && scriptOf(joined) == null) result[at] = joined
+            }
+        }
         return result
+    }
+
+    private class Run(val language: String, val text: String, val hasLetters: Boolean) {
+        var translated: String? = null
+    }
+
+    private fun splitRuns(text: String): List<Run> {
+        fun classOf(cp: Int): String? = when (Character.UnicodeScript.of(cp)) {
+            Character.UnicodeScript.HANGUL -> "ko"
+            Character.UnicodeScript.HIRAGANA, Character.UnicodeScript.KATAKANA -> "ja"
+            else -> if (Character.isLetter(cp)) "en" else null
+        }
+        val runs = mutableListOf<Run>()
+        val buffer = StringBuilder()
+        var current: String? = null
+        fun flush() {
+            if (buffer.isNotEmpty()) {
+                val t = buffer.toString().trim()
+                if (t.isNotEmpty()) runs += Run(current ?: "en", t, t.codePoints().anyMatch { Character.isLetter(it) })
+                buffer.setLength(0)
+            }
+        }
+        text.codePoints().forEach { cp ->
+            val cls = classOf(cp)
+            if (cls != null && current != null && cls != current) flush()
+            if (cls != null) current = cls
+            buffer.appendCodePoint(cp)
+        }
+        flush()
+        return runs
     }
 
     /** Translates each line of [batch] on its own, without markers. */

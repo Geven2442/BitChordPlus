@@ -53,6 +53,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
+import com.music.bitchord.data.YtMusicRepository
 import com.music.bitchord.data.model.LibraryState
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Download
@@ -72,6 +73,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -906,8 +908,17 @@ fun DetailScreen(
 
     }
 } else if (targetShelf == null) {
-    val sortedSongs = remember(rawSongs, songSort) { rawSongs.sortedForDetail(songSort) }
+    // The page's own Songs list is only the start: every release is read for
+    // its tracks, and the page fills in as they arrive.
+    val discography by produceState(rawSongs to true, page.browseId, rawSongs) {
+        value = rawSongs to true
+        YtMusicRepository.artistDiscography(page.browseId, page.title, page.sections, rawSongs)
+            .collect { value = it to true }
+        value = value.first to false
+    }
+    val sortedSongs = remember(discography.first, songSort) { discography.first.sortedForDetail(songSort) }
     ArtistSongsPage(
+        loading = discography.second,
         songs = sortedSongs,
         fallbackThumbnail = page.thumbnailUrl,
         palette = palette,
@@ -2447,6 +2458,7 @@ private object ArtistSongsPageKey
 /** Every song of an artist, one row each, on a page of its own. */
 @Composable
 private fun ArtistSongsPage(
+    loading: Boolean,
     songs: List<Song>,
     fallbackThumbnail: String?,
     palette: ArtworkPalette,
@@ -2467,6 +2479,17 @@ private fun ArtistSongsPage(
             bottom = contentPadding.calculateBottomPadding() + 16.dp,
         ),
     ) {
+        item(key = "all_found") {
+            Text(
+                text = stringResource(
+                    if (loading) R.string.artist_songs_searching else R.string.artist_songs_found,
+                    songs.size,
+                ),
+                color = palette.onBackgroundVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            )
+        }
         itemsIndexed(songs, key = { index, song -> "all_${index}_${song.videoId}" }) { index, song ->
             val isCurrent = isCurrentRow(song)
             SongRow(

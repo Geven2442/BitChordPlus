@@ -155,4 +155,32 @@ class TranslationFallbackTest {
             resetHooks()
         }
     }
+
+    @Test
+    fun mixedEnglishKoreanLinesAreSplitByScript(): Unit = runBlocking<Unit> {
+        // Auto-detect leaves Korean alone; only an explicit source language translates it.
+        val table = mapOf(
+            "Oh, my, oh, my," to "哦，我的，",
+            "지금 이 순간" to "此刻",
+        )
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                val form = request.body?.utf8().orEmpty().split('&').associate {
+                    val (k, v) = it.split('=', limit = 2)
+                    k to URLDecoder.decode(v, "UTF-8")
+                }
+                val sl = form["sl"]
+                var out = form["q"].orEmpty()
+                if (sl == "en") out = out.replace("Oh, my, oh, my,", table.getValue("Oh, my, oh, my,"))
+                // Whole mixed lines stay half done even under sl=ko.
+                if (sl == "ko" && !out.contains("Oh,")) out = out.replace("지금 이 순간", table.getValue("지금 이 순간"))
+                if (sl == "auto") out = out.replace("Oh, my, oh, my,", table.getValue("Oh, my, oh, my,"))
+                val escaped = out.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
+                return MockResponse.Builder().body("""[[["$escaped","x",null,null,1]],null,"en"]""").build()
+            }
+        }
+        val result = LyricsTranslation.translate("t8", lines("Oh, my, oh, my, 지금 이 순간", "Hello there"), "zh-TW")
+        val translated = assertIs<LyricsTranslation.Result.Translated>(result)
+        assertEquals("哦，我的， 此刻", translated.lines[0].text)
+    }
 }
