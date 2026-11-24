@@ -76,7 +76,7 @@ object LyricsTranslation {
     // Version 4: Simplified and Traditional Chinese are no longer treated as
     // the same language, so cached "already in your language" answers for
     // Chinese lyrics must be dropped.
-    private const val CACHE_VERSION = 7
+    private const val CACHE_VERSION = 8
     private const val CACHE_DIRECTORY = "lyrics_translation_v4"
     private const val MAX_CACHE_BYTES = 2L * 1024L * 1024L
     private const val MAX_BATCH_CHARS = 3_500
@@ -472,6 +472,24 @@ object LyricsTranslation {
         )
     }
 
+    /**
+     * "Lose your m-, m-, mind" is a singer stuttering into one word, not three
+     * words, and a translator reads each "m-" as a letter. Fragments that are
+     * a word's start followed by the word itself are dropped from what is sent;
+     * the line on screen is untouched.
+     */
+    internal fun withoutStutter(text: String): String {
+        var current = text
+        while (true) {
+            val next = STUTTER.replace(current, "")
+            if (next == current) break
+            current = next
+        }
+        return current.trim().ifBlank { text }
+    }
+
+    private val STUTTER = Regex("(?i)\\b([a-z]{1,4})-[,.]?\\s+(?=\\1)")
+
     private fun flatten(lines: List<LyricLine>): List<TextSlot> = buildList {
         lines.forEachIndexed { index, line ->
             if (line.text.isNotBlank()) {
@@ -480,13 +498,13 @@ object LyricsTranslation {
                     TextSlot(
                         lineIndex = index,
                         background = false,
-                        text = if (header) line.text.removePrefix("[").removeSuffix("]").trim() else line.text,
+                        text = if (header) line.text.removePrefix("[").removeSuffix("]").trim() else withoutStutter(line.text),
                         sectionHeader = header,
                     ),
                 )
             }
             line.background?.takeIf { it.text.isNotBlank() }?.let { background ->
-                add(TextSlot(index, background = true, background.text, sectionHeader = false))
+                add(TextSlot(index, background = true, withoutStutter(background.text), sectionHeader = false))
             }
         }
     }

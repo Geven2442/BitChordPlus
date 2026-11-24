@@ -183,4 +183,11 @@ class TranslationFallbackTest {
         val translated = assertIs<LyricsTranslation.Result.Translated>(result)
         assertEquals("哦，我的， 此刻", translated.lines[0].text)
     }
+
+    @Test
+    fun stutteredFragmentsAreNotSentForTranslation() {
+        assertEquals("Lose your mind, play the music", LyricsTranslation.withoutStutter("Lose your m-, m-, mind, play the music"))
+        assertEquals("Oh, my, oh, my, 지금 이 순간", LyricsTranslation.withoutStutter("Oh, my, oh, m-, my, 지금 이 순간"))
+        assertEquals("a well-known song", LyricsTranslation.withoutStutter("a well-known song"))
+    }
 }

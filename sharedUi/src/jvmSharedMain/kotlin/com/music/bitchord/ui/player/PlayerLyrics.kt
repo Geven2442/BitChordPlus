@@ -2027,6 +2027,23 @@ internal fun LyricsPanel(
                         value = distance,
                         animationSpec = tween(durationMillis = span, easing = LYRIC_EASING),
                     )
+                    // The row's height can still change once it takes the
+                    // highlight — a line that mixes scripts wraps differently
+                    // in its larger type — and the move above was measured
+                    // against the height it had before. Look again where it
+                    // actually landed and close any gap that is left.
+                    kotlinx.coroutines.delay(80)
+                    listState.layoutInfo.visibleItemsInfo
+                        .firstOrNull { it.index == focusLine }
+                        ?.let { landed ->
+                            val gap = (landed.offset - focusOffset(landed.size)).toFloat()
+                            if (kotlin.math.abs(gap) > 8f) {
+                                listState.animateScrollBy(
+                                    value = gap,
+                                    animationSpec = tween(LYRIC_SETTLE_MS, easing = LYRIC_EASING),
+                                )
+                            }
+                        }
                 }
                 // Somewhere off screen — after a seek, or a long instrumental
                 // scrolled past. How far is not known without laying the rows
