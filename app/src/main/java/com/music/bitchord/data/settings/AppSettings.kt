@@ -698,6 +698,7 @@ object AppSettings {
     /** Android Auto lyric line also carries a translation (original ／ translation). */
     val carLyricsTranslation = MutableStateFlow(false)
     val phoneLyricsTranslation = MutableStateFlow(false)
+    val onDeviceTranslation = MutableStateFlow(false)
     /** Experimental: phone lyric line broken onto its own line inside the title (Now Bar / Dynamic island). */
     val phoneLyricsNewline = MutableStateFlow(false)
 
@@ -1225,6 +1226,7 @@ object AppSettings {
         carLyricsOnTitle.value = prefs.getBoolean(KEY_CAR_LYRICS_ON_TITLE, false)
         carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
         phoneLyricsTranslation.value = prefs.getBoolean(KEY_PHONE_LYRICS_TRANSLATION, false)
+        onDeviceTranslation.value = prefs.getBoolean(KEY_ON_DEVICE_TRANSLATION, false)
         phoneLyricsNewline.value = prefs.getBoolean(KEY_PHONE_LYRICS_NEWLINE, false)
         lyricsWhenScreenOff.value = prefs.getBoolean(KEY_LYRICS_WHEN_SCREEN_OFF, false)
         voiceControl.value = prefs.getBoolean(KEY_VOICE_CONTROL, false)
@@ -1839,6 +1841,11 @@ object AppSettings {
     fun setCarLyricsTranslation(value: Boolean) {
         carLyricsTranslation.value = value
         prefs.edit().putBoolean(KEY_CAR_LYRICS_TRANSLATION, value).apply()
+    }
+
+    fun setOnDeviceTranslation(value: Boolean) {
+        onDeviceTranslation.value = value
+        prefs.edit().putBoolean(KEY_ON_DEVICE_TRANSLATION, value).apply()
     }
 
     fun setPhoneLyricsTranslation(value: Boolean) {
@@ -2664,6 +2671,7 @@ object AppSettings {
     private const val KEY_CAR_LYRICS_ON_TITLE = "car_lyrics_on_title"
     private const val KEY_CAR_LYRICS_TRANSLATION = "car_lyrics_translation"
     private const val KEY_PHONE_LYRICS_TRANSLATION = "phone_lyrics_translation"
+    private const val KEY_ON_DEVICE_TRANSLATION = "on_device_translation"
     private const val KEY_PHONE_LYRICS_NEWLINE = "phone_lyrics_newline"
     private const val KEY_LYRICS_WHEN_SCREEN_OFF = "lyrics_when_screen_off"
     private const val KEY_LYRIC_LEAD_MS = "lyric_lead_ms"

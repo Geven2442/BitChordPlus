@@ -472,6 +472,7 @@ dependencies {
     // client: Drive itself is three REST calls over OkHttp, which is far
     // lighter than the google-api-services-drive client and its HTTP stack.
     implementation("com.google.android.gms:play-services-auth:21.3.0")
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta5")
     // Opens the watch app after an update, so its install prompt is on screen.
     implementation("androidx.wear:wear-remote-interactions:1.1.0")
 

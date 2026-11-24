@@ -1554,4 +1554,12 @@
     <string name="video_quality_mode_saver">Data saver</string>
     <string name="video_quality_mode_saver_detail">Lower quality (360p)</string>
     <string name="video_quality_footer">The default picture quality for music videos, by the kind of connection in use. A video without 1440p or 4K plays at the best it has. A quality picked on the video itself wins.</string>
+    <string name="on_device_translation">On-device translation (experimental)</string>
+    <string name="on_device_translation_switch">Translate lyrics on this device</string>
+    <string name="on_device_translation_subtitle">When you are offline or Google Translate fails, translate lyrics with Gemini Nano on this phone. Quality is lower than online translation and is not saved.</string>
+    <string name="on_device_translation_checking">Checking whether this phone supports it…</string>
+    <string name="on_device_translation_unsupported">This device does not support Gemini Nano.</string>
+    <string name="on_device_translation_download">Download Gemini Nano</string>
+    <string name="on_device_translation_download_subtitle">The model is not on this phone yet. Download it once over Wi-Fi.</string>
+    <string name="on_device_translation_downloading">Downloading…</string>
 </resources>

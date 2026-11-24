@@ -159,6 +159,7 @@ import com.music.bitchord.data.LocalMediaRepository
 import com.music.bitchord.data.NerdStats
 import com.music.bitchord.data.scrobbling.LastFM
 import com.music.bitchord.data.listentogether.ListenTogether
+import com.music.bitchord.data.lyrics.OnDeviceTranslator
 import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.data.settings.VideoQualityMode
 import com.music.bitchord.voice.VoiceControlService
@@ -278,6 +279,7 @@ fun SettingsScreen(
     val carLyricsOnTitle by AppSettings.carLyricsOnTitle.collectAsStateWithLifecycle()
     val carLyricsTranslation by AppSettings.carLyricsTranslation.collectAsStateWithLifecycle()
     val phoneLyricsTranslation by AppSettings.phoneLyricsTranslation.collectAsStateWithLifecycle()
+    val onDeviceTranslation by AppSettings.onDeviceTranslation.collectAsStateWithLifecycle()
     val phoneLyrics by AppSettings.phoneLyrics.collectAsStateWithLifecycle()
     val phoneLyricsOnTitle by AppSettings.phoneLyricsOnTitle.collectAsStateWithLifecycle()
     val phoneLyricsNewline by AppSettings.phoneLyricsNewline.collectAsStateWithLifecycle()
@@ -1140,6 +1142,62 @@ fun SettingsScreen(
                             if (!voiceContinuous) enableVoice(continuous = true) else {
                                 AppSettings.setVoiceControlContinuous(false)
                                 VoiceControlService.stop(voiceContext)
+                            }
+                        },
+                    )
+                }
+            }
+        }
+
+        if (shows(SettingsCategory.ON_DEVICE_TRANSLATION)) SearchableSettingsGroup(search, header = stringResource(R.string.on_device_translation)) {
+            var support by remember { mutableStateOf(OnDeviceTranslator.Support.UNKNOWN) }
+            var downloading by remember { mutableStateOf(false) }
+            val translationScope = rememberCoroutineScope()
+            LaunchedEffect(downloading) { support = OnDeviceTranslator.status() }
+            val usable = support == OnDeviceTranslator.Support.AVAILABLE ||
+                support == OnDeviceTranslator.Support.DOWNLOADABLE ||
+                support == OnDeviceTranslator.Support.DOWNLOADING
+            val onDeviceTitle = stringResource(R.string.on_device_translation_switch)
+            row(onDeviceTitle, "translation", "offline", "gemini", "nano", "on-device") {
+                SettingsRow(
+                    icon = SfIcons.Translate,
+                    title = onDeviceTitle,
+                    subtitle = stringResource(
+                        when (support) {
+                            OnDeviceTranslator.Support.UNKNOWN -> R.string.on_device_translation_checking
+                            OnDeviceTranslator.Support.UNSUPPORTED -> R.string.on_device_translation_unsupported
+                            else -> R.string.on_device_translation_subtitle
+                        },
+                    ),
+                    trailing = {
+                        IosSwitch(
+                            checked = onDeviceTranslation && usable,
+                            onCheckedChange = { if (usable) AppSettings.setOnDeviceTranslation(it) },
+                        )
+                    },
+                    onClick = { if (usable) AppSettings.setOnDeviceTranslation(!onDeviceTranslation) },
+                )
+            }
+            if (support == OnDeviceTranslator.Support.DOWNLOADABLE || support == OnDeviceTranslator.Support.DOWNLOADING) {
+                val downloadTitle = stringResource(R.string.on_device_translation_download)
+                row(downloadTitle, "download", "gemini", "nano", "model") {
+                    SettingsRow(
+                        icon = SfIcons.Download,
+                        title = downloadTitle,
+                        subtitle = stringResource(
+                            if (downloading || support == OnDeviceTranslator.Support.DOWNLOADING) {
+                                R.string.on_device_translation_downloading
+                            } else {
+                                R.string.on_device_translation_download_subtitle
+                            },
+                        ),
+                        onClick = {
+                            if (!downloading) {
+                                downloading = true
+                                translationScope.launch {
+                                    OnDeviceTranslator.download()
+                                    downloading = false
+                                }
                             }
                         },
                     )
@@ -3380,6 +3438,7 @@ enum class SettingsCategory(@param:StringRes val title: Int) {
     DOWNLOADS(R.string.downloads),
     PLAYBACK(R.string.playback),
     LYRICS(R.string.settings_lyrics),
+    ON_DEVICE_TRANSLATION(R.string.on_device_translation),
     CONTENT_PREFERENCES(R.string.content_preferences),
     APPEARANCE(R.string.appearance),
     PERFORMANCE(R.string.performance),
@@ -3395,6 +3454,7 @@ enum class SettingsCategory(@param:StringRes val title: Int) {
             DOWNLOADS -> SfIcons.Download
             PLAYBACK -> SfIcons.PlayCircle
             LYRICS -> SfIcons.Translate
+            ON_DEVICE_TRANSLATION -> SfIcons.Performance
             CONTENT_PREFERENCES -> SfIcons.Video
             APPEARANCE -> SfIcons.Appearance
             PERFORMANCE -> SfIcons.Performance

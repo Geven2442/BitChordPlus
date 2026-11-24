@@ -111,6 +111,17 @@ object LyricsTranslation {
      */
     @Volatile
     var cacheDir: File? = null
+
+    /**
+     * An optional on-device engine, set by the app. [localEnabled] is the
+     * person's switch, [online] says whether the network is up, and
+     * [localTranslator] returns one translation per line or null when it
+     * cannot. It is used only when offline or when Google's service failed;
+     * its output is never cached, so the next online play gets the better one.
+     */
+    var localEnabled: () -> Boolean = { false }
+    var online: () -> Boolean = { true }
+    var localTranslator: (suspend (lines: List<String>, target: String) -> List<String>?)? = null
     private val client by lazy {
         Http.client.newBuilder()
             .callTimeout(12, TimeUnit.SECONDS)
@@ -175,6 +186,10 @@ object LyricsTranslation {
             }
         }
 
+        if (localEnabled() && !online()) {
+            localResult(lines, slots, target)?.let { return it }
+        }
+
         val batches = batches(slots)
         val answers = coroutineScope {
             // Two short requests at a time keeps a long lyric fast without
@@ -190,7 +205,9 @@ object LyricsTranslation {
                 async { answer ?: requestLineByLine(batches[i], target) }
             }.awaitAll()
         }
-        if (repaired.any { it == null }) return Result.Unavailable
+        if (repaired.any { it == null }) {
+            return (if (localEnabled()) localResult(lines, slots, target) else null) ?: Result.Unavailable
+        }
         val complete = repaired.filterNotNull()
         val detected = complete
             .groupBy { it.sourceLanguage.trim() }
@@ -248,6 +265,13 @@ object LyricsTranslation {
                 fromCache = false,
             )
         }
+    }
+
+    private suspend fun localResult(lines: List<LyricLine>, slots: List<TextSlot>, target: String): Result? {
+        val engine = localTranslator ?: return null
+        val out = runCatching { engine(slots.map { it.text }, target) }.getOrNull() ?: return null
+        if (out.size != slots.size || out.any { it.isBlank() }) return null
+        return Result.Translated(rebuild(lines, slots, out), sourceLanguage = "und", fromCache = false)
     }
 
     /**
