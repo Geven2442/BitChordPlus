@@ -96,8 +96,45 @@ object QueueBuilder {
      */
     fun isSameTitle(a: Song, b: Song): Boolean {
         val title = normalisedTitle(a.title)
-        return title.isNotEmpty() && title == normalisedTitle(b.title)
+        if (title.isNotEmpty() && title == normalisedTitle(b.title)) return true
+        val left = coreKey(a.title) ?: return false
+        return left == coreKey(b.title)
     }
+
+    /**
+     * The song's own name out of a Chinese upload title that dresses it up:
+     * `【姚晓棠】《迷人的危险》独唱版来啦…` and `姚曉棠 - 迷人的危險『為什麼最迷人的…`
+     * are one song, and neither title is the other. The name is what sits in
+     * 《》, or after the artist's dash up to the next bracket; both are folded to
+     * simplified characters so the two scripts meet. Only for titles that
+     * carry such a frame and are Chinese, and only a name of three characters or
+     * more, so a bare "Remix" after a dash never stands for a song.
+     */
+    fun coreKey(raw: String): String? {
+        if (!HAN.containsMatchIn(raw)) return null
+        val core = QUOTED_NAME.find(raw)?.groupValues?.get(1)
+            ?: raw.substringAfter(" - ", "").takeIf { it.isNotEmpty() }
+                ?.let { after -> after.substringBefore('『').substringBefore('「').substringBefore('《').substringBefore('(').substringBefore('（') }
+            ?: return null
+        val key = foldToSimplified(core).lowercase(Locale.ROOT).replace(PUNCTUATION, "")
+        return key.takeIf { it.length >= 3 && HAN.containsMatchIn(it) }
+    }
+
+    private fun foldToSimplified(s: String): String {
+        val out = StringBuilder(s.length)
+        for (ch in s) {
+            val i = TRADITIONAL.indexOf(ch)
+            out.append(if (i >= 0) SIMPLIFIED[i] else ch)
+        }
+        return out.toString()
+    }
+
+    private val HAN = Regex("\\p{IsHan}")
+    private val QUOTED_NAME = Regex("[《〈]([^》〉]+)[》〉]")
+
+    // The commonest characters that differ between the two scripts, index for index.
+    private const val TRADITIONAL = "愛嗎們這來個說對還經過時會為麼樣從張開關頭見點無車東長門問間題當發電話書聽讀寫畫龍鳳鳥魚馬風雲飛樂歡歲歷氣決準燈與傳隊陽陰險曉韓國學寧實寶將幾線給緊總處覺親習讓誰讚請謝邊進遠連選遲錄鐘鏡雙雜離靜韻響願顧顯驚體鬥齊齡憶懷戀淚歸夢獨雖難傷麗營藝幫帶帥幣幹廣應徹憂戰擁擇擔據數斷暫曆條機橋歐殘漢淺滿濃煙熱爭牆現環畢異療監盡盤眾確禮禍種積穩競筆節範簡紅約級純絕絲綠維網緣練縮繞繼續羅義聖聞職聯聰臉臺舊薩裡規視觀觸計訂許註評詞試誠該詳語誤課論謎謠講識變貓賓賞賢賴贈軟載較輕輸辦農運達違遞適邁郵鄉針鈴鋼錯錢鎖閉閒閃陣陸階隨雞項順須預領額顏類飄餘館驗髮鴻黃黨後殺藍銀鐵鎮嚴勵勞動務勝區協單賣買貴費資賽兒內兩劇剛創劍參擴隻聲屬層嶺島峽巔庫廳廢彈彎彌態懲懼戲戶擾擊攝敵斬晝暈朧檔櫃欄殼毀洶渦湧溫滾漲潔潤澀濕灣烏煩爺犧猶獎獵獸瑪疊瘋癡皺盞睜碼礦禪窮窩籠糧糾縱織繪纏罵翹腦膠艙艷蘭蘿蠟衛補裝複襯誘諒謊譜賬趕躍軌輝轉轟邏鄭醫釋銳鑒鑽閱闖闊隱霧靈靚頁頻顆飯飲餓驅驕驟髒魯鮮鯨鷹"
+    private const val SIMPLIFIED = "爱吗们这来个说对还经过时会为么样从张开关头见点无车东长门问间题当发电话书听读写画龙凤鸟鱼马风云飞乐欢岁历气决准灯与传队阳阴险晓韩国学宁实宝将几线给紧总处觉亲习让谁赞请谢边进远连选迟录钟镜双杂离静韵响愿顾显惊体斗齐龄忆怀恋泪归梦独虽难伤丽营艺帮带帅币干广应彻忧战拥择担据数断暂历条机桥欧残汉浅满浓烟热争墙现环毕异疗监尽盘众确礼祸种积稳竞笔节范简红约级纯绝丝绿维网缘练缩绕继续罗义圣闻职联聪脸台旧萨里规视观触计订许注评词试诚该详语误课论谜谣讲识变猫宾赏贤赖赠软载较轻输办农运达违递适迈邮乡针铃钢错钱锁闭闲闪阵陆阶随鸡项顺须预领额颜类飘余馆验发鸿黄党后杀蓝银铁镇严励劳动务胜区协单卖买贵费资赛儿内两剧刚创剑参扩只声属层岭岛峡巅库厅废弹弯弥态惩惧戏户扰击摄敌斩昼晕胧档柜栏壳毁汹涡涌温滚涨洁润涩湿湾乌烦爷牺犹奖猎兽玛叠疯痴皱盏睁码矿禅穷窝笼粮纠纵织绘缠骂翘脑胶舱艳兰萝蜡卫补装复衬诱谅谎谱账赶跃轨辉转轰逻郑医释锐鉴钻阅闯阔隐雾灵靓页频颗饭饮饿驱骄骤脏鲁鲜鲸鹰"
 
     /**
      * Whether two entries are the same recording. Ids differ between the audio

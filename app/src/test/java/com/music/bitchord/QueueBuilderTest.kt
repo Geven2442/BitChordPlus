@@ -213,4 +213,23 @@ class QueueBuilderTest {
         )
         assertEquals(false, extra.any { it.videoId == "vid" })
     }
+
+    @Test
+    fun `one chinese song under two dressed up titles is recommended once`() {
+        val extra = QueueBuilder.extend(
+            existing = listOf(song("old", "姚曉棠 - 迷人的危險『為什麼最迷人的人都危險』", "4K Music Make")),
+            candidates = listOf(
+                song("new", "【姚晓棠】《迷人的危险》独唱版来啦", "The light beyond"),
+                song("other", "Different Song", "Another"),
+            ),
+            limit = 10,
+        )
+        assertEquals(listOf("other"), extra.map { it.videoId })
+    }
+
+    @Test
+    fun `a bare remix after a dash is not a song name`() {
+        assertEquals(null, QueueBuilder.coreKey("晴天 - Remix"))
+        assertEquals(true, QueueBuilder.coreKey("姚曉棠 - 迷人的危險『test』") != null)
+    }
 }

@@ -205,7 +205,7 @@ private class QueueTap(val track: QueueTrack, val viewportOffset: Int, val fromH
 }
 
 /** The groups a queue row can be dragged within; a drag never leaves its own. */
-internal enum class QueueSection { USER, CONTEXT, AUTOPLAY }
+internal enum class QueueSection { HISTORY, USER, CONTEXT, AUTOPLAY }
 
 /** Current-track metadata and the sections displayed by [InlineQueue] in running order. */
 internal class QueueTracks(
@@ -216,6 +216,7 @@ internal class QueueTracks(
     val history: List<QueueTrack> = emptyList(),
 ) {
     operator fun get(section: QueueSection): List<QueueTrack> = when (section) {
+        QueueSection.HISTORY -> history
         QueueSection.USER -> user
         QueueSection.CONTEXT -> context
         QueueSection.AUTOPLAY -> autoplay
@@ -573,20 +574,8 @@ internal fun InlineQueue(
                     }
                 }
                 if (tracks.history.isNotEmpty()) {
-                    items(tracks.history, key = { it.key }) { track ->
-                        SwipeableQueueRow(
-                            track = track,
-                            onClick = { jumpTo(track.timelineIndex) },
-                            onLongPress = { onSongMenu(track.timelineIndex, track.song) },
-                            locked = controlsLocked,
-                            selection = selectionState,
-                            swipesEnabled = swipesEnabled,
-                            reduceAnimation = reduceAnimation,
-                            canCommitSwipe = canCommitSwipe,
-                            commitSwipe = commitSwipe,
-                            modifier = queueMotion(reduceAnimation),
-                        )
-                    }
+                    queueSection(tracks.history, QueueSection.HISTORY, drag, controlsLocked, jumpTo, onSongMenu,
+                        swipesEnabled, reduceAnimation, canCommitSwipe, commitSwipe, selectionState)
                 }
                 queueHeadingItem(
                     "header-user-queue", tracks.user.isNotEmpty(), reduceAnimation,
