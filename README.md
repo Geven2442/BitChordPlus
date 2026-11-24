@@ -11,9 +11,9 @@
 
 <br/>
 
-[![Latest release](https://img.shields.io/github/v/release/kushagrasinghx/BitChord?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/BitChord/releases)
+[![Latest release](https://img.shields.io/github/v/release/Geven2442/BitChordPlus?style=for-the-badge&labelColor=0d1117)](https://github.com/Geven2442/BitChordPlus/releases)
 [![License](https://img.shields.io/github/license/kushagrasinghx/BitChord?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/BitChord/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/kushagrasinghx/BitChord/total?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/BitChord/releases)
+[![Downloads](https://img.shields.io/github/downloads/Geven2442/BitChordPlus/total?style=for-the-badge&labelColor=0d1117)](https://github.com/Geven2442/BitChordPlus/releases)
 [![Listening now](https://api.bitchord.kushagrasingh.in/api/stats/live/badge.svg)](https://api.bitchord.kushagrasingh.in/api/stats/live)
 
 <br/>
@@ -26,6 +26,15 @@
 <a href="https://trendshift.io/repositories/177639?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-177639" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/177639" alt="kushagrasinghx%2FBitChord | Trendshift" width="250" height="55"/></a>
 
 </div>
+
+> [!NOTE]
+> **BitChord+** 是我（Geven2442）以原版 [BitChord](https://github.com/kushagrasinghx/BitChord)（作者 kushagrasinghx，GPL-3.0）為基礎修改的個人版本，並非官方版本，也與原作者無關。
+> 
+> **BitChord+** is a personal modified version of the original [BitChord](https://github.com/kushagrasinghx/BitChord) by kushagrasinghx (GPL-3.0), made by Geven2442. It is not the official build and is not affiliated with the original author. The source here stays under the same GPL-3.0 licence.
+> 
+> 原版專案 / Original project: https://github.com/kushagrasinghx/BitChord
+> 
+> 上方的 Release、Downloads 標章是本專案（BitChord+）的數字；下方的功能介紹仍是原版 BitChord 的內容。 / The Release and Downloads badges are for BitChord+; the feature list below is the original BitChord's.
 
 > [!IMPORTANT]
 > BitChord is not affiliated with, endorsed by, or connected to YouTube or Google in any way. Use it at your own discretion.
