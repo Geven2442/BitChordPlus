@@ -52,10 +52,17 @@ object QueueBuilder {
         // video: its videos, where the mix has enough of them to be one.
         val songsOnly = candidates.filterNot { it.isVideo }
         val videosOnly = candidates.filter { it.isVideo }
-        val ordered = when {
+        val picked = when {
             preferVideos && videosOnly.size >= MIN_VIDEO_STATION -> videosOnly
             preferVideos -> candidates
             else -> songsOnly.ifEmpty { candidates }
+        }
+        // Where a song and its music-video upload share a name, the video is
+        // the one to drop, whichever the mix happened to list first.
+        val ordered = if (picked.any { !it.isVideo } && picked.any { it.isVideo }) {
+            picked.filterNot { v -> v.isVideo && picked.any { !it.isVideo && isSameTitle(it, v) } }
+        } else {
+            picked
         }
 
         for (candidate in ordered) {

@@ -197,4 +197,20 @@ class QueueBuilderTest {
         )
         assertEquals(listOf("aaa", "bbb"), extra.map { it.videoId })
     }
+
+    @Test
+    fun `a music video loses to the song of the same name in a thin video station`() {
+        val video = song("vid", "Same Name", "A").copy(isVideo = true)
+        val extra = QueueBuilder.extend(
+            existing = emptyList(),
+            candidates = listOf(
+                video,
+                song("aud", "Same Name", "A"),
+                song("o1", "One", "B").copy(isVideo = true),
+            ),
+            limit = 10,
+            preferVideos = true,
+        )
+        assertEquals(false, extra.any { it.videoId == "vid" })
+    }
 }
