@@ -1520,4 +1520,13 @@
     <string name="voice_not_available">No speech recognition available on this phone</string>
     <string name="phone_lyrics_translation">Translated lyrics in status bar and lock screen</string>
     <string name="phone_lyrics_translation_subtitle">The status bar, lock screen and notification show the translated line in the lyrics translation language, the original until it arrives (needs internet)</string>
+    <string name="video_quality_wifi">Video quality on Wi-Fi</string>
+    <string name="video_quality_cellular">Video quality on mobile data</string>
+    <string name="video_quality_mode_auto">Auto (recommended)</string>
+    <string name="video_quality_mode_auto_detail">Follows your network speed and goes up to 1440p or 4K when it is fast</string>
+    <string name="video_quality_mode_high">Higher quality</string>
+    <string name="video_quality_mode_high_detail">Always the tallest picture the video has; uses more data</string>
+    <string name="video_quality_mode_saver">Data saver</string>
+    <string name="video_quality_mode_saver_detail">Lower quality (360p)</string>
+    <string name="video_quality_footer">The default picture quality for music videos, by the kind of connection in use. A video without 1440p or 4K plays at the best it has. A quality picked on the video itself wins.</string>
 </resources>

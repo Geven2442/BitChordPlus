@@ -160,6 +160,7 @@ import com.music.bitchord.data.NerdStats
 import com.music.bitchord.data.scrobbling.LastFM
 import com.music.bitchord.data.listentogether.ListenTogether
 import com.music.bitchord.data.settings.AppSettings
+import com.music.bitchord.data.settings.VideoQualityMode
 import com.music.bitchord.voice.VoiceControlService
 import com.music.bitchord.data.settings.OutputPcmMode
 import com.music.bitchord.data.settings.BitPerfectMode
@@ -236,6 +237,8 @@ fun SettingsScreen(
     val context = LocalContext.current
 
     val wifiQuality by AppSettings.audioQualityWifi.collectAsStateWithLifecycle()
+    val videoQualityWifi by AppSettings.videoQualityWifi.collectAsStateWithLifecycle()
+    val videoQualityCellular by AppSettings.videoQualityCellular.collectAsStateWithLifecycle()
     val cellularQuality by AppSettings.audioQualityCellular.collectAsStateWithLifecycle()
     val metered by AppSettings.meteredConnection.collectAsStateWithLifecycle()
     val crossfade by AppSettings.crossfadeSeconds.collectAsStateWithLifecycle()
@@ -609,6 +612,26 @@ fun SettingsScreen(
                         badge = stringResource(R.string.in_use).takeIf { metered == true },
                         value = cellularQuality.localizedLabel(),
                         onClick = { onOpenChoice(SettingsChoiceKind.AUDIO_QUALITY_CELLULAR) },
+                    )
+                }
+                val videoWifiTitle = stringResource(R.string.video_quality_wifi)
+                row(videoWifiTitle, "video", "wi-fi", "quality", "4k") {
+                    SettingsRow(
+                        icon = SfIcons.Wifi,
+                        title = videoWifiTitle,
+                        badge = stringResource(R.string.in_use).takeIf { metered == false },
+                        value = videoQualityWifi.localizedLabel(),
+                        onClick = { onOpenChoice(SettingsChoiceKind.VIDEO_QUALITY_WIFI) },
+                    )
+                }
+                val videoCellularTitle = stringResource(R.string.video_quality_cellular)
+                row(videoCellularTitle, "video", "cellular", "mobile", "quality", "4k") {
+                    SettingsRow(
+                        icon = SfIcons.SignalCellularAlt,
+                        title = videoCellularTitle,
+                        badge = stringResource(R.string.in_use).takeIf { metered == true },
+                        value = videoQualityCellular.localizedLabel(),
+                        onClick = { onOpenChoice(SettingsChoiceKind.VIDEO_QUALITY_CELLULAR) },
                     )
                 }
                 // Sits with the quality ceilings rather than with Playback: it
@@ -2517,6 +2540,21 @@ internal fun Context.countOfMonths(months: Int): String = if (months == 0) {
 }
 
 @Composable
+private fun VideoQualityMode.localizedLabel(): String = stringResource(
+    when (this) {
+        VideoQualityMode.AUTO -> R.string.video_quality_mode_auto
+        VideoQualityMode.HIGH -> R.string.video_quality_mode_high
+        VideoQualityMode.SAVER -> R.string.video_quality_mode_saver
+    },
+)
+
+private fun VideoQualityMode.detailRes(): Int = when (this) {
+    VideoQualityMode.AUTO -> R.string.video_quality_mode_auto_detail
+    VideoQualityMode.HIGH -> R.string.video_quality_mode_high_detail
+    VideoQualityMode.SAVER -> R.string.video_quality_mode_saver_detail
+}
+
+@Composable
 private fun AudioQuality.localizedLabel(): String = stringResource(
     when (this) {
         AudioQuality.LOW -> R.string.low
@@ -3372,6 +3410,8 @@ enum class SettingsCategory(@param:StringRes val title: Int) {
 enum class SettingsChoiceKind(@param:StringRes val title: Int) {
     AUDIO_QUALITY_WIFI(R.string.on_wifi),
     AUDIO_QUALITY_CELLULAR(R.string.on_mobile_data),
+    VIDEO_QUALITY_WIFI(R.string.video_quality_wifi),
+    VIDEO_QUALITY_CELLULAR(R.string.video_quality_cellular),
     DOWNLOAD_QUALITY(R.string.download_quality),
     AUTOMIX_PERFORMANCE(R.string.automix_performance),
     BIT_PERFECT(R.string.bit_perfect_output),
@@ -3435,6 +3475,22 @@ fun SettingsChoicePage(
                     // which sources a rung consults is read per stream off the
                     // connection in force; see [AudioQuality.permits].
                     if (wifi) AppSettings.setAudioQualityWifi(quality) else AppSettings.setAudioQualityCellular(quality)
+                    onChosen()
+                }
+            }
+
+            SettingsChoiceKind.VIDEO_QUALITY_WIFI, SettingsChoiceKind.VIDEO_QUALITY_CELLULAR -> {
+                val wifi = choice == SettingsChoiceKind.VIDEO_QUALITY_WIFI
+                val wifiMode by AppSettings.videoQualityWifi.collectAsStateWithLifecycle()
+                val cellularMode by AppSettings.videoQualityCellular.collectAsStateWithLifecycle()
+                ChoiceGroup(
+                    options = VideoQualityMode.entries,
+                    selected = if (wifi) wifiMode else cellularMode,
+                    label = { it.localizedLabel() },
+                    detail = { stringResource(it.detailRes()) },
+                    footer = stringResource(R.string.video_quality_footer),
+                ) { mode ->
+                    if (wifi) AppSettings.setVideoQualityWifi(mode) else AppSettings.setVideoQualityCellular(mode)
                     onChosen()
                 }
             }

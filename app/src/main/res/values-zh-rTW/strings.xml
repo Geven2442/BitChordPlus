@@ -1580,4 +1580,13 @@
     <string name="voice_not_available">這支手機沒有可用的語音辨識</string>
     <string name="phone_lyrics_translation">狀態欄與鎖定螢幕歌詞顯示翻譯</string>
     <string name="phone_lyrics_translation_subtitle">狀態欄、鎖定螢幕與通知的歌詞改顯示翻譯後的文字，翻譯語言跟隨歌詞翻譯設定；翻譯送達前先顯示原文（需要網路）</string>
+    <string name="video_quality_wifi">Wi-Fi 影片畫質</string>
+    <string name="video_quality_cellular">行動網路影片畫質</string>
+    <string name="video_quality_mode_auto">自動（建議）</string>
+    <string name="video_quality_mode_auto_detail">依網路速度調整，網路好時盡量用高畫質（1440p、4K）</string>
+    <string name="video_quality_mode_high">較高畫質</string>
+    <string name="video_quality_mode_high_detail">一律用影片提供的最高畫質，耗用的流量較多</string>
+    <string name="video_quality_mode_saver">數據節省模式</string>
+    <string name="video_quality_mode_saver_detail">較低畫質（360p）</string>
+    <string name="video_quality_footer">音樂影片的預設畫質，依目前連線種類套用。影片沒有 1440p 或 4K 時，會用它有的最高畫質。在影片畫面上手動選的畫質優先。</string>
 </resources>

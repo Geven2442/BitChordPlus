@@ -38,6 +38,7 @@ import com.music.bitchord.data.TrackLog
 import com.music.bitchord.data.innertube.InnerTubeXResolver
 import com.music.bitchord.data.model.Song
 import com.music.bitchord.data.settings.AppSettings
+import com.music.bitchord.data.settings.VideoQualityMode
 import com.music.bitchord.playback.ChunkedDataSource
 import com.music.bitchord.playback.MusicOnlyPlayback
 import com.music.bitchord.playback.toSong
@@ -240,7 +241,8 @@ object MusicVideoEngine {
                 }
             }
             // Above 1080p YouTube serves VP9 and AV1, which not every phone
-            // decodes: one more try on the H.264 ladder before giving up.
+            // decodes: one more try on the H.264 ladder before giving up. Auto
+            // may have gone that high too, so this applies to it as well.
             if (loadedCap > AUTO_HEIGHT && stepDown.add(id)) {
                 load(id)
                 return
@@ -270,6 +272,7 @@ object MusicVideoEngine {
         surfaces.removeAll { it.view === view }
         surfaces += Surface(view, priority)
         val app = view.context.applicationContext
+        appContext = app
         if (prefs == null) {
             prefs = app.getSharedPreferences("music_video", Context.MODE_PRIVATE).also { stored ->
                 val held = stored.getInt(KEY_QUALITY, 0).takeIf { it > 0 }
@@ -360,10 +363,57 @@ object MusicVideoEngine {
         load(id)
     }
 
+    /** For asking the system how fast the connection is. */
+    private var appContext: Context? = null
+
+    /**
+     * What the system says the current network can download, in kbit/s; 0 when
+     * it won't say. On Wi-Fi this is the link speed, on mobile data the
+     * radio's own estimate — a rough guide, which is all Auto needs.
+     */
+    private fun downstreamKbps(): Int {
+        val context = appContext ?: return 0
+        return runCatching {
+            val manager = context.getSystemService(android.net.ConnectivityManager::class.java)
+            manager.getNetworkCapabilities(manager.activeNetwork)?.linkDownstreamBandwidthKbps ?: 0
+        }.getOrDefault(0)
+    }
+
+    /**
+     * What Auto opens at: as high as the connection looks able to carry, so a
+     * fast network gets 1440p or 4K and a slow or metered one stays modest.
+     * Anything above [AUTO_HEIGHT] is VP9 or AV1 and steps back down to the
+     * H.264 ladder if this phone won't decode it.
+     */
+    private fun autoHeight(): Int {
+        val metered = AppSettings.meteredConnection.value == true
+        // The setting for the kind of connection in use: the one the "in use"
+        // badge in Settings marks.
+        val mode = if (metered) AppSettings.videoQualityCellular.value else AppSettings.videoQualityWifi.value
+        when (mode) {
+            VideoQualityMode.HIGH -> return TALLEST_HEIGHT
+            VideoQualityMode.SAVER -> return SAVER_HEIGHT
+            VideoQualityMode.AUTO -> Unit
+        }
+        val kbps = downstreamKbps()
+        return if (metered) {
+            when {
+                kbps >= 30_000 -> 1080
+                kbps >= 15_000 -> 720
+                else -> METERED_HEIGHT
+            }
+        } else {
+            when {
+                kbps >= 40_000 -> 2160
+                kbps >= 20_000 -> 1440
+                else -> AUTO_HEIGHT
+            }
+        }
+    }
+
     /** The height asked for: the held one, else what Auto opens at for this connection. */
     private fun capFor(videoId: String): Int {
-        val metered = AppSettings.meteredConnection.value == true
-        val auto = if (metered) METERED_HEIGHT else AUTO_HEIGHT
+        val auto = autoHeight().let { if (videoId in stepDown) minOf(it, AUTO_HEIGHT) else it }
         val held = _quality.value.held ?: return auto
         return if (videoId in stepDown) minOf(held, AUTO_HEIGHT) else held
     }
@@ -527,9 +577,15 @@ object MusicVideoEngine {
     /** Narrower than this is a cover held still, not a picture worth showing. */
     private const val MIN_VIDEO_ASPECT = 1.2f
 
-    /** Where Auto opens, as on the web player: the top of YouTube's H.264 ladder. */
+    /** Where Auto opens on an ordinary connection, and where it falls back to: the top of YouTube's H.264 ladder. */
     private const val AUTO_HEIGHT = 1080
     private const val METERED_HEIGHT = 480
+
+    /** Higher quality: as tall as the video goes — the resolver takes the best it has at or below this. */
+    private const val TALLEST_HEIGHT = 4320
+
+    /** Data saver. */
+    private const val SAVER_HEIGHT = 360
     private const val KEY_QUALITY = "quality"
 
     /** The same as the audio's: googlevideo's ways of refusing a URL. */

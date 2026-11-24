@@ -106,6 +106,14 @@ enum class BitPerfectMode {
  * [LOSSLESS] has no streaming counterpart at all: it is the only rung that lets
  * a configured source's bit-exact file end up as a file on disk.
  */
+/**
+ * How the music video's picture is sized on one kind of connection — the
+ * choices YouTube's own quality-and-audio settings offer. Auto reads the
+ * network; Higher always asks for the tallest picture the video has; Data saver
+ * asks for a small one.
+ */
+enum class VideoQualityMode { AUTO, HIGH, SAVER }
+
 enum class DownloadQuality(
     /** Ceiling for the YouTube Opus ladder. [Int.MAX_VALUE] means "whichever rung is best". */
     val maxKbps: Int,
@@ -206,6 +214,10 @@ object AppSettings {
      */
     val audioQualityWifi = MutableStateFlow(AudioQuality.LOSSLESS)
     val audioQualityCellular = MutableStateFlow(AudioQuality.LOSSLESS)
+
+    /** The music video's picture quality, per kind of connection. */
+    val videoQualityWifi = MutableStateFlow(VideoQualityMode.AUTO)
+    val videoQualityCellular = MutableStateFlow(VideoQualityMode.AUTO)
 
     /** Allowed duration difference when replacing a playing stream with one from a source. */
     val upgradeLengthSlackSeconds = MutableStateFlow(DEFAULT_UPGRADE_LENGTH_SLACK_SECONDS)
@@ -1083,6 +1095,8 @@ object AppSettings {
         migrateSingleQuality()
         audioQualityWifi.value = readQuality(KEY_QUALITY_WIFI)
         audioQualityCellular.value = readQuality(KEY_QUALITY_CELLULAR)
+        videoQualityWifi.value = readVideoQuality(KEY_VIDEO_QUALITY_WIFI)
+        videoQualityCellular.value = readVideoQuality(KEY_VIDEO_QUALITY_CELLULAR)
         upgradeLengthSlackSeconds.value = prefs.getInt(
             KEY_UPGRADE_LENGTH_SLACK_SECONDS,
             DEFAULT_UPGRADE_LENGTH_SLACK_SECONDS,
@@ -1403,6 +1417,19 @@ object AppSettings {
     fun setRepeatMode(value: Int) {
         repeatMode.value = value
         prefs.edit().putInt(KEY_REPEAT_MODE, value).apply()
+    }
+
+    private fun readVideoQuality(key: String): VideoQualityMode =
+        runCatching { VideoQualityMode.valueOf(prefs.getString(key, null) ?: "") }.getOrDefault(VideoQualityMode.AUTO)
+
+    fun setVideoQualityWifi(value: VideoQualityMode) {
+        videoQualityWifi.value = value
+        prefs.edit().putString(KEY_VIDEO_QUALITY_WIFI, value.name).apply()
+    }
+
+    fun setVideoQualityCellular(value: VideoQualityMode) {
+        videoQualityCellular.value = value
+        prefs.edit().putString(KEY_VIDEO_QUALITY_CELLULAR, value.name).apply()
     }
 
     fun setAudioQualityWifi(value: AudioQuality) {
@@ -2546,6 +2573,8 @@ object AppSettings {
 
     private const val KEY_QUALITY_LEGACY = "audio_quality"
     private const val KEY_QUALITY_WIFI = "audio_quality_wifi"
+    private const val KEY_VIDEO_QUALITY_WIFI = "video_quality_wifi"
+    private const val KEY_VIDEO_QUALITY_CELLULAR = "video_quality_cellular"
     private const val KEY_QUALITY_CELLULAR = "audio_quality_cellular"
     private const val KEY_UPGRADE_LENGTH_SLACK_SECONDS = "upgrade_length_slack_seconds"
     private const val KEY_QUALITY_DOWNLOAD = "audio_quality_download"

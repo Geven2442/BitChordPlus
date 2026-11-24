@@ -1580,4 +1580,13 @@
     <string name="voice_not_available">這支手機沒有可用的語音辨識</string>
     <string name="phone_lyrics_translation">状态栏与锁屏歌词显示翻译</string>
     <string name="phone_lyrics_translation_subtitle">状态栏、锁屏与通知的歌词改为显示翻译后的文字，翻译语言跟随歌词翻译设置；翻译送达前先显示原文（需要网络）</string>
+    <string name="video_quality_wifi">Wi-Fi 视频画质</string>
+    <string name="video_quality_cellular">移动网络视频画质</string>
+    <string name="video_quality_mode_auto">自动（建议）</string>
+    <string name="video_quality_mode_auto_detail">根据网速调整，网络好时尽量用高画质（1440p、4K）</string>
+    <string name="video_quality_mode_high">较高画质</string>
+    <string name="video_quality_mode_high_detail">始终使用视频提供的最高画质，耗用流量较多</string>
+    <string name="video_quality_mode_saver">数据节省模式</string>
+    <string name="video_quality_mode_saver_detail">较低画质（360p）</string>
+    <string name="video_quality_footer">音乐视频的默认画质，按当前连接类型应用。视频没有 1440p 或 4K 时，会使用它有的最高画质。在视频画面上手动选的画质优先。</string>
 </resources>
