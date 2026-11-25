@@ -1891,6 +1891,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             if (!isCurrentHomeLoad(identity, generation)) return@onSuccess
                             homeContinuation = feed.continuation
                             publishHomeShelves(feed.shelves)
+                            // Opening the app counts as a refresh: the feed is on
+                            // screen at once, then Quick picks and the card shelves
+                            // are swapped in place for a freshly mixed set, so the
+                            // list is never last time's.
+                            launch { mixOpenedHome(identity, generation, feed.shelves) }
                         }
                         .onFailure { failure ->
                             if (isCurrentHomeLoad(identity, generation) && _home.value !is UiState.Success) {
@@ -2063,6 +2068,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val added = shelves.withoutRepeatsOf(existing)
             .filter { homeSeenTitles.add(it.title.lowercase(Locale.ROOT)) }
         if (added.isNotEmpty()) _home.value = UiState.Success(existing + added)
+    }
+
+    private suspend fun mixOpenedHome(identity: String?, generation: Long, shelves: List<HomeShelf>) {
+        val mixed = runCatching { withContext(Dispatchers.IO) { HomeRefreshMix.refresh(shelves) } }
+            .getOrNull() ?: return
+        if (!isCurrentHomeLoad(identity, generation)) return
+        val byTitle = mixed.associateBy { it.title.lowercase(Locale.ROOT) }
+        val current = (_home.value as? UiState.Success)?.data ?: return
+        _home.value = UiState.Success(current.map { shelf ->
+            byTitle[shelf.title.lowercase(Locale.ROOT)]
+                ?.takeIf { it.layout == shelf.layout && it.items != shelf.items }
+                ?: shelf
+        })
     }
 
     /** Refreshes the core feed without blanking the current Play page first. */
@@ -2786,7 +2804,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         /** How old Home may get before coming back to the app refreshes it. */
-        private const val HOME_ENTRY_REFRESH_MS = 3 * 60_000L
+        private const val HOME_ENTRY_REFRESH_MS = 30_000L
         /** Today's Top Picks row, kept so the next launch paints it before any request. */
         private const val TOP_PICKS_FILE = "top_picks_v4.json"
 
