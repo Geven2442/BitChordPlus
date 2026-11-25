@@ -109,6 +109,7 @@ class BitChordApplication : Application(), SingletonImageLoader.Factory, Configu
         migrateScriptOnlyAppLocale()
         LyricsTranslation.cacheDir = cacheDir
         com.music.bitchord.data.lyrics.OnDeviceTranslator.install(this)
+        com.music.bitchord.data.lyrics.LyricsScriptHook.install()
         // PlaybackService shares this process, so seeding the cookie here means
         // stream resolution is authenticated from the first play onwards.
         authStore = AuthStore(this)

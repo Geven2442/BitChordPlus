@@ -66,6 +66,14 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object LyricsRepository {
 
+    /**
+     * Applied to the lines of every result before it is handed back, so each
+     * caller — the player, the notification, a downloaded file's tag — shows
+     * the same text. The app uses it to show Simplified lyrics in Traditional.
+     */
+    @Volatile
+    var postProcess: ((List<LyricLine>) -> List<LyricLine>)? = null
+
     /** Lyrics, and which source they turned out to come from. */
     data class Result(val source: LyricsSource, val lines: List<LyricLine>)
 
@@ -158,6 +166,10 @@ object LyricsRepository {
 
         try {
             pick(racing.map { (source, job) -> source to suspend { job.await() } }, prioritizeSyllableSync)
+                ?.let { found ->
+                    val after = postProcess
+                    if (after == null) found else found.copy(lines = runCatching { after(found.lines) }.getOrDefault(found.lines))
+                }
         } finally {
             // Whoever lost the race is no longer worth waiting on, and
             // coroutineScope will not return while they are still running.

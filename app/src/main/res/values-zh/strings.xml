@@ -1591,4 +1591,6 @@
     <string name="video_quality_footer">音乐视频的默认画质，按当前连接类型应用。视频没有 1440p 或 4K 时，会使用它有的最高画质。在视频画面上手动选的画质优先。</string>
     <string name="lyrics_roman_and_translated">罗马拼音与翻译同时显示</string>
     <string name="lyrics_roman_and_translated_subtitle">翻译歌词时，在每行下方多显示罗马拼音（原文／拼音／翻译三层）</string>
+    <string name="lyrics_to_traditional">简体歌词自动转繁体</string>
+    <string name="lyrics_to_traditional_subtitle">App 语言为繁体中文时，简体中文歌词直接转成繁体显示，不需要点翻译</string>
 </resources>

@@ -1622,4 +1622,6 @@
     <string name="artist_songs_searching">目前找到 %1$d 首，還在查這位歌手的其他發行…</string>
     <string name="lyrics_roman_and_translated">羅馬拼音與翻譯同時顯示</string>
     <string name="lyrics_roman_and_translated_subtitle">翻譯歌詞時，在每行下方多顯示羅馬拼音（原文／拼音／翻譯三層）</string>
+    <string name="lyrics_to_traditional">簡體歌詞自動轉繁體</string>
+    <string name="lyrics_to_traditional_subtitle">App 語言為繁體中文時，簡體中文歌詞直接轉成繁體顯示，不需要按翻譯</string>
 </resources>

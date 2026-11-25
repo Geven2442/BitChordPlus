@@ -1587,4 +1587,6 @@
     <string name="artist_songs_searching">Found %1$d songs so far — still looking through their releases…</string>
     <string name="lyrics_roman_and_translated">Romanization and translation together</string>
     <string name="lyrics_roman_and_translated_subtitle">Translated lyrics also show the romanization under each line</string>
+    <string name="lyrics_to_traditional">Show Simplified lyrics in Traditional</string>
+    <string name="lyrics_to_traditional_subtitle">When the app is in Traditional Chinese, Simplified Chinese lyrics are converted to Traditional directly, with no translation needed</string>
 </resources>
