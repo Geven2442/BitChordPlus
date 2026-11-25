@@ -1365,7 +1365,7 @@
     <string name="app_icon">סמל האפליקציה</string>
     <string name="app_icon_default">ברירת מחדל</string>
     <string name="show_queue_history">הצגת היסטוריית התור</string>
-    <string name="show_queue_history_subtitle">מציג עד 100 שירים שהושמעו מעל \"מתנגן עכשיו\" בתור</string>
+    <string name="show_queue_history_subtitle">מציג עד 200 שירים שהושמעו מעל \"מתנגן עכשיו\" בתור</string>
     <string name="not_enough_this_week">השמיעו עוד כמה שירים השבוע כדי לפתוח את ה-Replay שלכם.</string>
     <string name="replay_artist_start_week">כל השבוע, </string>
     <string name="replay_songs_end_week"> מילאו את השבוע שלך.</string>

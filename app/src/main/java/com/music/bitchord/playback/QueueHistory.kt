@@ -3,7 +3,7 @@ package com.music.bitchord.playback
 import androidx.media3.common.Player
 
 /** Number of completed queue entries retained behind the current song. */
-internal const val MAX_QUEUE_HISTORY = 100
+internal const val MAX_QUEUE_HISTORY = 200
 
 /** How many entries at the head of the live queue are older than its history window. */
 internal fun queueHistoryTrimCount(currentIndex: Int): Int =

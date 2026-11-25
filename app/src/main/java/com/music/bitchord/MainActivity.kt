@@ -620,10 +620,7 @@ private fun BitChordApp(
     // Top Picks turns over each hour; coming back to the app after a
     // turn-over is an open too.
     LaunchedEffect(appForeground) {
-        if (appForeground) {
-            viewModel.refreshTopPicksIfStale()
-            viewModel.refreshHomeOnEntry()
-        }
+        if (appForeground) viewModel.refreshTopPicksIfStale()
     }
     // Where the two ends of opening and closing the player meet: the mini
     // player's cover reports itself here, the sheet its offset, and the player

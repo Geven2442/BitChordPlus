@@ -1334,7 +1334,7 @@
     <string name="app_icon">アプリアイコン</string>
     <string name="app_icon_default">デフォルト</string>
     <string name="show_queue_history">キューの履歴を表示</string>
-    <string name="show_queue_history_subtitle">キューの「再生中」の上に、再生済みの曲を最大100曲表示します</string>
+    <string name="show_queue_history_subtitle">キューの「再生中」の上に、再生済みの曲を最大200曲表示します</string>
     <string name="not_enough_this_week">今週もう少し曲を再生するとReplayが解放されます。</string>
     <string name="replay_artist_start_week">今週はずっと、</string>
     <string name="replay_songs_end_week">があなたの1週間を彩りました。</string>

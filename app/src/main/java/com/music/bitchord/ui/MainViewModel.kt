@@ -1648,23 +1648,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     private var homeStale = false
 
-    /** When Home was last fetched or refreshed, in elapsed-realtime milliseconds. */
-    private var homeFetchedAt = 0L
-
-    /**
-     * Called when the app comes back to the screen. Quick picks are rebuilt on
-     * every pull, so an app that was only in the background would otherwise
-     * greet the listener with the same list as last time: re-fetch Home in
-     * place once it is a few minutes old.
-     */
-    fun refreshHomeOnEntry() {
-        val state = _home.value
-        if (state !is UiState.Success || Feed.HOME in _refreshing.value) return
-        val now = android.os.SystemClock.elapsedRealtime()
-        if (now - homeFetchedAt < HOME_ENTRY_REFRESH_MS) return
-        refresh(Feed.HOME)
-    }
-
     /** Call when the home tab becomes visible. */
     fun onHomeShown() {
         if (!homeStale) return
@@ -1870,7 +1853,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun loadHome() {
-        homeFetchedAt = android.os.SystemClock.elapsedRealtime()
         val identity = listenerKey()
         val generation = homeLoadGeneration.incrementAndGet()
         _home.value = UiState.Loading
@@ -2085,7 +2067,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Refreshes the core feed without blanking the current Play page first. */
     private suspend fun refreshHome(identity: String?) = coroutineScope {
-        homeFetchedAt = android.os.SystemClock.elapsedRealtime()
         val recent = if (_signedIn.value) async { YtMusicRepository.homeRecentlyPlayed() } else null
         // Like YouTube Music: a pull always brings a fresh set of picks,
         // not only once the hour has turned over.
@@ -2803,8 +2784,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
-        /** How old Home may get before coming back to the app refreshes it. */
-        private const val HOME_ENTRY_REFRESH_MS = 30_000L
         /** Today's Top Picks row, kept so the next launch paints it before any request. */
         private const val TOP_PICKS_FILE = "top_picks_v4.json"
 

@@ -1356,7 +1356,7 @@
     <string name="app_icon">ऐप आइकन</string>
     <string name="app_icon_default">डिफ़ॉल्ट</string>
     <string name="show_queue_history">कतार का इतिहास दिखाएँ</string>
-    <string name="show_queue_history_subtitle">कतार में “अभी चल रहा है” के ऊपर पहले चले 100 तक गाने दिखाएँ</string>
+    <string name="show_queue_history_subtitle">कतार में “अभी चल रहा है” के ऊपर पहले चले 200 तक गाने दिखाएँ</string>
     <string name="not_enough_this_week">अपना Replay अनलॉक करने के लिए इस हफ़्ते कुछ और गाने सुनें।</string>
     <string name="replay_artist_start_week">पूरे हफ़्ते, </string>
     <string name="replay_songs_end_week"> ने आपका हफ़्ता भर दिया।</string>

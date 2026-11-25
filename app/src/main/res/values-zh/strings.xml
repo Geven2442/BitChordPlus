@@ -1327,7 +1327,7 @@
     <string name="app_icon">应用图标</string>
     <string name="app_icon_default">默认</string>
     <string name="show_queue_history">显示队列历史</string>
-    <string name="show_queue_history_subtitle">在队列中“正在播放”上方显示最多 100 首已播放的歌曲</string>
+    <string name="show_queue_history_subtitle">在队列中“正在播放”上方显示最多 200 首已播放的歌曲</string>
     <string name="not_enough_this_week">本周再多播放几首歌曲即可解锁你的 Replay。</string>
     <string name="replay_artist_start_week">整周里，</string>
     <string name="replay_songs_end_week"> 填满了你的这一周。</string>

@@ -1273,7 +1273,7 @@
     <string name="app_icon">Biểu tượng ứng dụng</string>
     <string name="app_icon_default">Mặc định</string>
     <string name="show_queue_history">Hiện lịch sử hàng đợi</string>
-    <string name="show_queue_history_subtitle">Hiện tối đa 100 bài đã phát phía trên “Đang phát” trong hàng đợi</string>
+    <string name="show_queue_history_subtitle">Hiện tối đa 200 bài đã phát phía trên “Đang phát” trong hàng đợi</string>
     <string name="not_enough_this_week">Hãy nghe thêm vài bài trong tuần này để mở khóa Replay của bạn.</string>
     <string name="replay_artist_start_week">Suốt cả tuần, </string>
     <string name="replay_songs_end_week"> đã lấp đầy tuần của bạn.</string>

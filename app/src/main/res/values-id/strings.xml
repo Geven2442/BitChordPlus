@@ -1333,7 +1333,7 @@
     <string name="app_icon">Ikon aplikasi</string>
     <string name="app_icon_default">Default</string>
     <string name="show_queue_history">Tampilkan riwayat antrean</string>
-    <string name="show_queue_history_subtitle">Menampilkan hingga 100 lagu yang sudah diputar di atas “Sedang diputar” di antrean</string>
+    <string name="show_queue_history_subtitle">Menampilkan hingga 200 lagu yang sudah diputar di atas “Sedang diputar” di antrean</string>
     <string name="not_enough_this_week">Putar beberapa lagu lagi minggu ini untuk membuka Replay Anda.</string>
     <string name="replay_artist_start_week">Sepanjang minggu ini, </string>
     <string name="replay_songs_end_week"> mengisi minggu Anda.</string>

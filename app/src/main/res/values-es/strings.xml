@@ -1328,7 +1328,7 @@
     <string name="app_icon">Icono de la app</string>
     <string name="app_icon_default">Predeterminado</string>
     <string name="show_queue_history">Mostrar historial de la cola</string>
-    <string name="show_queue_history_subtitle">Muestra hasta 100 canciones reproducidas antes de «Reproduciendo ahora» en la cola</string>
+    <string name="show_queue_history_subtitle">Muestra hasta 200 canciones reproducidas antes de «Reproduciendo ahora» en la cola</string>
     <string name="not_enough_this_week">Escucha unas cuantas canciones más esta semana para desbloquear tu Replay.</string>
     <string name="replay_artist_start_week">Toda la semana, </string>
     <string name="replay_songs_end_week"> llenaron tu semana.</string>

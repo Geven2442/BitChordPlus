@@ -1357,7 +1357,7 @@
     <string name="app_icon">Icône de l\'app</string>
     <string name="app_icon_default">Par défaut</string>
     <string name="show_queue_history">Afficher l\'historique de la file</string>
-    <string name="show_queue_history_subtitle">Affiche jusqu\'à 100 titres déjà écoutés au-dessus de « En cours de lecture » dans la file</string>
+    <string name="show_queue_history_subtitle">Affiche jusqu\'à 200 titres déjà écoutés au-dessus de « En cours de lecture » dans la file</string>
     <string name="not_enough_this_week">Écoutez encore quelques titres cette semaine pour débloquer votre Replay.</string>
     <string name="replay_artist_start_week">Toute la semaine, </string>
     <string name="replay_songs_end_week"> ont rempli votre semaine.</string>
