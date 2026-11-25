@@ -49,8 +49,21 @@ object HomeRefreshMix {
             .shuffled()
         val keepOriginal = original.shuffled().take(size / 3)
         val seen = HashSet<String?>()
+        // The same song comes back under more than one id — the single and the
+        // album cut, or YouTube's own copy and a radio's — so a row is also
+        // dropped when a title and a credited name are already on the shelf.
+        val titles = HashMap<String, MutableList<Set<String>>>()
         return (keepOriginal + fromRadio + original.shuffled())
             .filter { it.videoId == null || seen.add(it.videoId) }
+            .filter { item ->
+                val title = com.music.bitchord.playback.QueueBuilder.titleKey(item.title)
+                if (title.isEmpty()) return@filter true
+                val credit = com.music.bitchord.playback.QueueBuilder.artistSet(item.subtitle)
+                val held = titles.getOrPut(title) { mutableListOf() }
+                if (held.any { it.isEmpty() || credit.isEmpty() || it.any(credit::contains) }) return@filter false
+                held += credit
+                true
+            }
             .take(size)
             .shuffled()
     }

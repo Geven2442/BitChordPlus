@@ -33,4 +33,18 @@ class HomeRefreshMixTest {
         pulls.forEach { assertEquals(original.map { it.videoId }.toSet(), it.toSet()) }
         assertNotEquals(1, pulls.toSet().size)
     }
+
+    @Test
+    fun sameSongUnderTwoIdsAppearsOnce() {
+        val twice = listOf(
+            ShelfItem("我猜你也沒有多愛我", "于冬然", null, "a1", null),
+            ShelfItem("我猜你也没有多爱我", "于冬然", null, "a2", null),
+            ShelfItem("大火 (Reborn)", "李佳薇", null, "b1", null),
+        )
+        val radioTwin = listOf(Song(videoId = "c1", title = "大火 (Reborn)", artist = "李佳薇", thumbnailUrl = null))
+        repeat(10) {
+            val mixed = HomeRefreshMix.mixQuickPicks(twice, radioTwin)
+            assertEquals(2, mixed.size)
+        }
+    }
 }
