@@ -1593,4 +1593,5 @@
     <string name="lyrics_roman_and_translated_subtitle">翻译歌词时，在每行下方多显示罗马拼音（原文／拼音／翻译三层）</string>
     <string name="lyrics_to_traditional">简体歌词自动转繁体</string>
     <string name="lyrics_to_traditional_subtitle">App 语言为繁体中文时，简体中文歌词直接转成繁体显示，不需要点翻译</string>
+    <string name="car_swap_lines">交换歌词与歌名</string>
 </resources>

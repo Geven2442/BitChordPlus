@@ -1624,4 +1624,5 @@
     <string name="lyrics_roman_and_translated_subtitle">翻譯歌詞時，在每行下方多顯示羅馬拼音（原文／拼音／翻譯三層）</string>
     <string name="lyrics_to_traditional">簡體歌詞自動轉繁體</string>
     <string name="lyrics_to_traditional_subtitle">App 語言為繁體中文時，簡體中文歌詞直接轉成繁體顯示，不需要按翻譯</string>
+    <string name="car_swap_lines">交換歌詞與歌名</string>
 </resources>

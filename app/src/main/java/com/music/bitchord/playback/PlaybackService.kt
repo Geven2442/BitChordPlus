@@ -220,6 +220,7 @@ const val EXTRA_BOUNDED_CONTEXT_CONTINUATION = "bitchord.boundedContext.continua
 
 /** Session command used to smoothly swap the current track's version (film vs release). */
 const val ACTION_SWAP_VERSION = "com.music.bitchord.action.SWAP_VERSION"
+const val ACTION_SWAP_CAR_LINES = "com.music.bitchord.action.SWAP_CAR_LINES"
 const val EXTRA_SWAP_MEDIA_ITEM = "bitchord.swap.media_item"
 
 /** Session command used by the media notification's and the 4×1 widget's Favorite button. */
@@ -864,6 +865,7 @@ class PlaybackService : MediaLibraryService() {
     private val commitRadioQueueCommand = SessionCommand(ACTION_COMMIT_RADIO_QUEUE, Bundle.EMPTY)
     private val upgradeQualityCommand = SessionCommand(ACTION_UPGRADE_QUALITY, Bundle.EMPTY)
     private val swapVersionCommand = SessionCommand(ACTION_SWAP_VERSION, Bundle.EMPTY)
+    private val swapCarLinesCommand = SessionCommand(ACTION_SWAP_CAR_LINES, Bundle.EMPTY)
     private val queueDragCommand = SessionCommand(ACTION_QUEUE_DRAG, Bundle.EMPTY)
     private val queueMoveToUserCommand = SessionCommand(ACTION_QUEUE_MOVE_TO_USER, Bundle.EMPTY)
     private val queueReplayHistoryCommand = SessionCommand(ACTION_QUEUE_REPLAY_HISTORY, Bundle.EMPTY)
@@ -2369,7 +2371,16 @@ class PlaybackService : MediaLibraryService() {
                     .setDisplayName(getString(R.string.revert_to_original))
                     .build()
             }
-        return notificationButtons() + listOfNotNull(station, revert)
+        // Flips the lyric and the "title · artist" line in the car, so the order
+        // can be changed from the dashboard without picking up the phone.
+        val swapLines = if (!AppSettings.carLyrics.value) null else {
+            CommandButton.Builder(CommandButton.ICON_UNDEFINED)
+                .setCustomIconResId(R.drawable.ic_car_swap_lines)
+                .setSessionCommand(swapCarLinesCommand)
+                .setDisplayName(getString(R.string.car_swap_lines))
+                .build()
+        }
+        return notificationButtons() + listOfNotNull(station, revert, swapLines)
     }
 
     /** Android Auto / Automotive controllers currently connected to the session. */
@@ -9631,6 +9642,7 @@ class PlaybackService : MediaLibraryService() {
                 .add(shuffleCommand)
                 .add(startStationCommand)
                 .add(revertToOriginalCommand)
+                .add(swapCarLinesCommand)
                 .add(swapToVersionCommand)
                 .add(beginRadioQueueCommand)
                 .add(commitRadioQueueCommand)
@@ -9714,6 +9726,7 @@ class PlaybackService : MediaLibraryService() {
                 ACTION_TOGGLE_SHUFFLE -> toggleShuffleFromSession()
                 ACTION_START_STATION -> startStationFromSession()
                 ACTION_REVERT_TO_ORIGINAL -> revertCurrentToOriginal()
+                ACTION_SWAP_CAR_LINES -> AppSettings.setCarLyricsOnTitle(!AppSettings.carLyricsOnTitle.value)
                 ACTION_SWAP_TO_VERSION -> swapCurrentToVersion(args)
                 ACTION_BEGIN_RADIO_QUEUE -> beginRadioQueue()
                 ACTION_COMMIT_RADIO_QUEUE -> player?.let(::saveQueueSnapshotImmediately)
