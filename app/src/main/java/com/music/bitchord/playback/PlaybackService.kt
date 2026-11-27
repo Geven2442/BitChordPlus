@@ -8916,16 +8916,26 @@ class PlaybackService : MediaLibraryService() {
             carTranslation = null
             carTranslationJob?.cancel()
             carTranslationJob = scope.launch(Dispatchers.IO) {
-                val result = runCatching {
-                    LyricsTranslation.translate(videoId, lines, carTranslationTarget())
-                }.getOrNull()
-                if (result is LyricsTranslation.Result.Translated) {
-                    withContext(Dispatchers.Main) {
-                        if (carTranslationFor === lines) {
-                            carTranslation = result.lines
-                            updateLyricSubtitle()
+                // With the screen off the network can be late to come back and the
+                // on-device model refuses to run in the background, so one failed
+                // try is not the answer: ask again a few times before giving up.
+                var attempt = 0
+                while (true) {
+                    val result = runCatching {
+                        LyricsTranslation.translate(videoId, lines, carTranslationTarget())
+                    }.getOrNull()
+                    if (result is LyricsTranslation.Result.Translated) {
+                        withContext(Dispatchers.Main) {
+                            if (carTranslationFor === lines) {
+                                carTranslation = result.lines
+                                updateLyricSubtitle()
+                            }
                         }
+                        break
                     }
+                    // SameLanguage is a real answer; only a failure is retried.
+                    if (result is LyricsTranslation.Result.SameLanguage || ++attempt > 4) break
+                    delay(4_000L * attempt)
                 }
             }
         }
