@@ -1711,8 +1711,12 @@ private fun BitChordApp(
             val currentTimeline = player.queue.takeIf { it.size == c.mediaItemCount }
                 ?: (0 until c.mediaItemCount).map { c.getMediaItemAt(it).toSong() }
             val currentIndex = c.currentMediaItemIndex
+            val keepQueued = AppSettings.keepQueuedOnNewPlay.value
             val oneOffQueue = QueueCoordinator.buildOneOffQueue(
-                currentTimeline = currentTimeline,
+                // Off: songs still waiting in "play next" are dropped, as for a list.
+                currentTimeline = if (keepQueued) currentTimeline else currentTimeline.filterIndexed { i, s ->
+                    i <= currentIndex || s.queueTier != QueueTier.USER_QUEUE
+                },
                 currentIndex = currentIndex,
                 tappedSong = song,
                 source = source,

@@ -2264,6 +2264,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // ranks by what is popular, not by what this account listens to. A
         // term picked here is a whole query, the same one YouTube Music's own
         // app files in history when its suggestion is tapped.
+        recordSearch()
         runSearch()
     }
 
