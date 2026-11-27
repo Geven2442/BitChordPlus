@@ -32,6 +32,12 @@ class VoiceRecognizer(
     private var recognizer: SpeechRecognizer? = null
     private var active = false
     private var failures = 0
+    private var useOnDevice = false
+    private var switched = false
+
+    /** The last recogniser error code, for telling the user why nothing happened. */
+    var lastError: Int = 0
+        private set
 
     val isActive: Boolean get() = active
 
@@ -55,7 +61,12 @@ class VoiceRecognizer(
     }
 
     private fun create(): SpeechRecognizer? {
+        // The system's regular recogniser first (on Samsung that is Google's, which
+        // has Chinese models). The on-device one is the fallback: it needs a
+        // language pack that is often missing and then fails without a sound.
         val r = when {
+            !useOnDevice && SpeechRecognizer.isRecognitionAvailable(context) ->
+                SpeechRecognizer.createSpeechRecognizer(context)
             Build.VERSION.SDK_INT >= 33 && SpeechRecognizer.isOnDeviceRecognitionAvailable(context) ->
                 SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
             SpeechRecognizer.isRecognitionAvailable(context) -> SpeechRecognizer.createSpeechRecognizer(context)
@@ -70,7 +81,7 @@ class VoiceRecognizer(
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag())
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            if (useOnDevice) putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
         }
         runCatching { recognizer?.startListening(intent) }.onFailure { scheduleRestart(1_000L) }
@@ -114,6 +125,27 @@ class VoiceRecognizer(
 
         override fun onError(error: Int) {
             if (!active) return
+            lastError = error
+            // A recogniser that cannot do this language or has gone away is swapped
+            // for the other kind once, instead of retrying the same dead one.
+            if (error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ||
+                error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ||
+                error == SpeechRecognizer.ERROR_CLIENT ||
+                error == SpeechRecognizer.ERROR_SERVER_DISCONNECTED
+            ) {
+                if (!switched) {
+                    switched = true
+                    useOnDevice = !useOnDevice
+                    runCatching { recognizer?.destroy() }
+                    recognizer = create()
+                    if (recognizer == null) {
+                        if (continuous) stop().also { onFatal() } else finishOneShot(false)
+                    } else {
+                        scheduleRestart(300L)
+                    }
+                    return
+                }
+            }
             when (error) {
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
                     stop()

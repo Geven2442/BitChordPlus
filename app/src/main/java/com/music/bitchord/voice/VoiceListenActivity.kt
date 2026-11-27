@@ -47,7 +47,18 @@ class VoiceListenActivity : ComponentActivity() {
                 VoiceActions.run(this, future, cmd)
                 Toast.makeText(this, heard, Toast.LENGTH_SHORT).show()
             },
-            onFinished = { heard -> if (heard) finish() else finishWith(R.string.voice_not_understood) },
+            onFinished = { heard ->
+                if (heard) {
+                    finish()
+                } else {
+                    // The recogniser's own error code, so "heard nothing" and "the
+                    // recogniser is broken" can be told apart.
+                    val code = recognizer?.lastError ?: 0
+                    val text = getString(R.string.voice_not_understood) + if (code > 0 && code != 7 && code != 6) " ($code)" else ""
+                    Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            },
             onFatal = { finishWith(R.string.voice_no_permission) },
         )
         if (!r.start()) {
