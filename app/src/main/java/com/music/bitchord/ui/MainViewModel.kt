@@ -2232,60 +2232,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun recordSearch() {
         val q = _query.value.trim()
         if (q.isEmpty()) return
-        // Prefer typeahead results — they are live and always available while typing.
-        val fromTypeahead = _typeaheadResults.value.firstOrNull {
-            it is SearchResult.TopTrack || it is SearchResult.Track
-        }
-        if (fromTypeahead is SearchResult.Track) {
-            recordEntity(SearchHistoryEntity(
-                id = fromTypeahead.song.videoId,
-                title = fromTypeahead.song.title,
-                subtitle = listOfNotNull(fromTypeahead.song.artist).joinToString(" · "),
-                artworkUrl = fromTypeahead.song.thumbnailUrl,
-                entityType = EntityType.TRACK,
-            ))
-            return
-        }
-        if (fromTypeahead is SearchResult.TopTrack) {
-            recordEntity(SearchHistoryEntity(
-                id = fromTypeahead.song.videoId,
-                title = fromTypeahead.song.title,
-                subtitle = listOfNotNull(fromTypeahead.song.artist).joinToString(" · "),
-                artworkUrl = fromTypeahead.song.thumbnailUrl,
-                entityType = EntityType.TRACK,
-            ))
-            return
-        }
-        // Fall back to committed search results.
-        val topResult = (_results.value as? UiState.Success)?.data?.firstOrNull {
-            it is SearchResult.TopTrack || it is SearchResult.Track
-        }
-        if (topResult is SearchResult.Track) {
-            recordEntity(SearchHistoryEntity(
-                id = topResult.song.videoId,
-                title = topResult.song.title,
-                subtitle = listOfNotNull(topResult.song.artist).joinToString(" · "),
-                artworkUrl = topResult.song.thumbnailUrl,
-                entityType = EntityType.TRACK,
-            ))
-        } else if (topResult is SearchResult.TopTrack) {
-            recordEntity(SearchHistoryEntity(
-                id = topResult.song.videoId,
-                title = topResult.song.title,
-                subtitle = listOfNotNull(topResult.song.artist).joinToString(" · "),
-                artworkUrl = topResult.song.thumbnailUrl,
-                entityType = EntityType.TRACK,
-            ))
-        } else {
-            // Fallback: record as a raw-text entity for backwards compatibility
-            recordEntity(SearchHistoryEntity(
-                id = "q:$q",
-                title = q,
-                subtitle = "",
-                artworkUrl = null,
-                entityType = EntityType.TRACK,
-            ))
-        }
+        // What was typed is what gets remembered, as YouTube Music does. The
+        // artists and songs the user actually opens are recorded separately,
+        // when they are tapped.
+        recordEntity(SearchHistoryEntity(
+            id = "q:$q",
+            title = q,
+            subtitle = "",
+            artworkUrl = null,
+            entityType = EntityType.TRACK,
+        ))
     }
 
     /**
@@ -2355,6 +2311,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             runAddonSearch(q)
             return
         }
+        recordSearch()
         runSearch(refresh = true)
     }
 

@@ -16,6 +16,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import com.music.bitchord.ui.components.PillSegmentedControl
 import com.music.bitchord.ui.components.longPressMenuClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -283,6 +284,13 @@ fun SearchScreen(
                 suggesting -> {
                     searchSuggestions(
                         suggestions = suggestions,
+                        matchingHistory = history,
+                        query = query,
+                        onHistoryClick = { entity ->
+                            if (entity.id.startsWith("q:")) onSuggestionClick(entity.title)
+                            else onHistoryClick(entity)
+                            focusManager.clearFocus()
+                        },
                         // Picking one is done typing, so the keyboard comes down
                         // with it and the results get the whole screen.
                         onClick = { term ->
@@ -312,7 +320,13 @@ fun SearchScreen(
                         history = history,
                         currentSong = currentSong,
                         isPlaying = isPlaying,
-                        onClick = onHistoryClick,
+                        onClick = {
+                            if (it.id.startsWith("q:")) {
+                                onSuggestionClick(it.title)
+                                focusManager.clearFocus()
+                            } else onHistoryClick(it)
+                        },
+                        onFill = onQueryChange,
                         onSongLongPress = onSongLongPress,
                         onRemove = onHistoryRemove,
                         onClear = onHistoryClear,
@@ -595,6 +609,9 @@ private fun TopResultCard(
  */
 private fun LazyListScope.searchSuggestions(
     suggestions: List<String>,
+    matchingHistory: List<SearchHistoryEntity>,
+    query: String,
+    onHistoryClick: (SearchHistoryEntity) -> Unit,
     onClick: (String) -> Unit,
     onFill: (String) -> Unit,
 ) {
@@ -605,7 +622,26 @@ private fun LazyListScope.searchSuggestions(
     // Skip the echo of the typed text (element 0) — it's already visible in
     // the search field itself — and cap at N so the list stays compact above
     // the playable-media cards.
-    itemsIndexed(suggestions.drop(1).take(3), key = { _, term -> "suggest:$term" }) { _, term ->
+    // Like YouTube Music: what was searched or opened before and matches the
+    // typed text comes first, with a clock icon, then the server's completions.
+    val needle = query.trim()
+    val past = if (needle.isEmpty()) emptyList() else matchingHistory
+        .filter { it.title.contains(needle, ignoreCase = true) }
+        .take(3)
+    val pastTitles = past.map { it.title.lowercase() }.toSet()
+    itemsIndexed(past, key = { _, e -> "suggest-history:${e.id}" }) { _, entity ->
+        SuggestionRow(
+            term = entity.title,
+            isQueryAction = false,
+            icon = Icons.Rounded.History,
+            onFill = { onFill(entity.title) },
+            onClick = { onHistoryClick(entity) },
+        )
+    }
+    itemsIndexed(
+        suggestions.drop(1).filter { it.lowercase() !in pastTitles }.take(3),
+        key = { _, term -> "suggest:$term" },
+    ) { _, term ->
         SuggestionRow(
             term = term,
             isQueryAction = false,
@@ -621,17 +657,20 @@ private fun LazyListScope.searchSuggestions(
  * keyboard's own suggestion strip use, and the reason a longer completion
  * isn't a dead end when it's only nearly right.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SuggestionRow(
     term: String,
     isQueryAction: Boolean,
     onFill: (() -> Unit)?,
     onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Rounded.Search,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(
                 start = PAGE_GUTTER,
                 end = 8.dp,
@@ -641,7 +680,7 @@ private fun SuggestionRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            Icons.Rounded.Search,
+            icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(22.dp),
@@ -811,6 +850,7 @@ private fun LazyListScope.recentSearches(
     currentSong: Song?,
     isPlaying: Boolean,
     onClick: (SearchHistoryEntity) -> Unit,
+    onFill: (String) -> Unit,
     onSongLongPress: (Song) -> Unit,
     onRemove: (String) -> Unit,
     onClear: () -> Unit,
@@ -845,6 +885,20 @@ private fun LazyListScope.recentSearches(
         // be queued without interrupting what's playing. The ids an old build
         // saved as raw queries ("q:…") have no track behind them.
         val song = entity.toSong()
+        if (entity.id.startsWith("q:")) {
+            // A plain search term, shown the way YouTube Music does: clock icon,
+            // the words, and an arrow that puts them back in the field. Holding
+            // the row forgets it.
+            SuggestionRow(
+                term = entity.title,
+                isQueryAction = false,
+                icon = Icons.Rounded.History,
+                onFill = { onFill(entity.title) },
+                onClick = { onClick(entity) },
+                onLongClick = { onRemove(entity.id) },
+            )
+            return@items
+        }
         RecentSearchEntityRow(
             entity = entity,
             isCurrent = entity.entityType == EntityType.TRACK && entity.id == currentSong?.videoId,
@@ -963,13 +1017,14 @@ private fun RecentSearchEntityRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.size(52.dp)) {
+                val artShape = if (entity.entityType == EntityType.ARTIST) CircleShape else RoundedCornerShape(8.dp)
                 AsyncImage(
                     model = entity.artworkUrl,
                     contentDescription = null,
                     modifier = Modifier
                         .size(52.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .thumbnailBorder(RoundedCornerShape(8.dp))
+                        .clip(artShape)
+                        .thumbnailBorder(artShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 )
                 if (isCurrent && isPlaying) {
