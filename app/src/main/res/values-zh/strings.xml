@@ -1546,7 +1546,7 @@
     <string name="phone_lyrics_on_title">歌词放在歌名那行</string>
     <string name="lyrics_on_title_subtitle">第一行歌词，第二行「歌名 · 歌手」</string>
     <string name="lyrics_after_title_subtitle">第一行「歌名 · 歌手」，第二行歌词</string>
-    <string name="car_lyrics_on_title">歌词放在歌名那行（车机）</string>
+    <string name="car_lyrics_on_title">歌词放在歌名那行</string>
     <string name="update_channel_name">应用更新</string>
     <string name="update_notification_title">BitChord+ 有新版本</string>
     <string name="update_notification_text">%1$s 已发布，点一下更新。</string>
