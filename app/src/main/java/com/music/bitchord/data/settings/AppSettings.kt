@@ -707,6 +707,7 @@ object AppSettings {
 
     /** On Android Auto, put the lyric on the title line and "title · artist" below it. */
     val carLyricsOnTitle = MutableStateFlow(false)
+    val carAutoLyricsOnTitle = MutableStateFlow(true)
     /** Android Auto lyric line also carries a translation (original ／ translation). */
     val carLyricsTranslation = MutableStateFlow(false)
     val carLyricsTranslationOnly = MutableStateFlow(false)
@@ -1244,6 +1245,7 @@ object AppSettings {
         syncedLyrics.value = prefs.getBoolean(KEY_SYNCED_LYRICS, true)
         carLyrics.value = prefs.getBoolean(KEY_CAR_LYRICS, true)
         carLyricsOnTitle.value = prefs.getBoolean(KEY_CAR_LYRICS_ON_TITLE, false)
+        carAutoLyricsOnTitle.value = prefs.getBoolean(KEY_CAR_AUTO_LYRICS_ON_TITLE, true)
         carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
         carLyricsTranslationOnly.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION_ONLY, false)
         phoneLyricsTranslation.value = prefs.getBoolean(KEY_PHONE_LYRICS_TRANSLATION, false)
@@ -1866,6 +1868,11 @@ object AppSettings {
     fun setPhoneLyricsNewline(value: Boolean) {
         phoneLyricsNewline.value = value
         prefs.edit().putBoolean(KEY_PHONE_LYRICS_NEWLINE, value).apply()
+    }
+
+    fun setCarAutoLyricsOnTitle(value: Boolean) {
+        carAutoLyricsOnTitle.value = value
+        prefs.edit().putBoolean(KEY_CAR_AUTO_LYRICS_ON_TITLE, value).apply()
     }
 
     fun setCarLyricsTranslationOnly(value: Boolean) {
@@ -2741,6 +2748,7 @@ object AppSettings {
     private const val KEY_SYNCED_LYRICS = "synced_lyrics"
     private const val KEY_CAR_LYRICS = "car_lyrics"
     private const val KEY_CAR_LYRICS_ON_TITLE = "car_lyrics_on_title"
+    private const val KEY_CAR_AUTO_LYRICS_ON_TITLE = "car_auto_lyrics_on_title"
     private const val KEY_CAR_LYRICS_TRANSLATION = "car_lyrics_translation"
     private const val KEY_CAR_LYRICS_TRANSLATION_ONLY = "car_lyrics_translation_only"
     private const val KEY_PHONE_LYRICS_TRANSLATION = "phone_lyrics_translation"

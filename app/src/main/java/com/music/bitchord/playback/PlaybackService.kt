@@ -9725,6 +9725,13 @@ class PlaybackService : MediaLibraryService() {
         override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
             if (session.isAutoCompanionController(controller) || session.isAutomotiveController(controller)) {
                 carControllers += controller
+                // Joining a car puts the lyric on the title line by itself, unless
+                // the user turned that off. It can still be flipped from the car.
+                if (AppSettings.carLyrics.value && AppSettings.carAutoLyricsOnTitle.value &&
+                    !AppSettings.carLyricsOnTitle.value
+                ) {
+                    AppSettings.setCarLyricsOnTitle(true)
+                }
                 refreshCustomLayouts()
             }
         }
@@ -9787,7 +9794,16 @@ class PlaybackService : MediaLibraryService() {
                 ACTION_START_STATION -> startStationFromSession()
                 ACTION_REVERT_TO_ORIGINAL -> revertCurrentToOriginal()
                 ACTION_SWAP_CAR_LINES -> AppSettings.setCarLyricsOnTitle(!AppSettings.carLyricsOnTitle.value)
-                ACTION_CAR_TRANSLATION_ONLY -> AppSettings.setCarLyricsTranslationOnly(!AppSettings.carLyricsTranslationOnly.value)
+                // The globe steps through: original ／ translation, translation only,
+                // original only, and back.
+                ACTION_CAR_TRANSLATION_ONLY -> when {
+                    AppSettings.carLyricsTranslationOnly.value -> {
+                        AppSettings.setCarLyricsTranslationOnly(false)
+                        AppSettings.setCarLyricsTranslation(false)
+                    }
+                    AppSettings.carLyricsTranslation.value -> AppSettings.setCarLyricsTranslationOnly(true)
+                    else -> AppSettings.setCarLyricsTranslation(true)
+                }
                 ACTION_SWAP_TO_VERSION -> swapCurrentToVersion(args)
                 ACTION_BEGIN_RADIO_QUEUE -> beginRadioQueue()
                 ACTION_COMMIT_RADIO_QUEUE -> player?.let(::saveQueueSnapshotImmediately)

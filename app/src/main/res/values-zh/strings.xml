@@ -1597,4 +1597,6 @@
     <string name="car_translation_only">车机：只显示翻译</string>
     <string name="car_translation_only_title">车机：只显示翻译</string>
     <string name="car_translation_only_subtitle">Android Auto 的歌词行只显示翻译后的文字，并自动开启翻译；车机画面上也有按钮可以随时切换</string>
+    <string name="car_auto_lyrics_on_title">连上车机时自动开启</string>
+    <string name="car_auto_lyrics_on_title_subtitle">每次连上 Android Auto 时，自动把歌词放在歌名那行；关闭后会保留你自己的选择</string>
 </resources>

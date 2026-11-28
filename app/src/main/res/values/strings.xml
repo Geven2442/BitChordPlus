@@ -1593,4 +1593,6 @@
     <string name="car_translation_only">Car: translation only</string>
     <string name="car_translation_only_title">Car: show only the translation</string>
     <string name="car_translation_only_subtitle">On Android Auto, show the lyric line as its translation alone. Turns translation on by itself.</string>
+    <string name="car_auto_lyrics_on_title">Turn it on when connecting to the car</string>
+    <string name="car_auto_lyrics_on_title_subtitle">On Android Auto, put the lyric on the title line each time the phone connects. Turn off to keep your own choice.</string>
 </resources>
