@@ -8797,6 +8797,38 @@ class PlaybackService : MediaLibraryService() {
                     updateLyricSubtitle()
                 }
             }
+            prefetchNextTranslation()
+        }
+    }
+
+    /**
+     * Translates the song after this one ahead of time. With the screen off the
+     * network can be held back, so a song that changes then would arrive without
+     * its translation; this warms the cache while the connection is still good.
+     * Best effort: any failure just leaves the song to be translated when it plays.
+     */
+    private suspend fun prefetchNextTranslation() {
+        if (!(AppSettings.phoneLyricsTranslation.value ||
+                (AppSettings.carLyrics.value && AppSettings.carLyricsTranslation.value))
+        ) return
+        val next = withContext(Dispatchers.Main) {
+            val p = player ?: return@withContext null
+            val i = p.nextMediaItemIndex
+            if (i == androidx.media3.common.C.INDEX_UNSET) null else p.getMediaItemAt(i).toSong()
+        } ?: return
+        runCatching {
+            val found = LyricsRepository.lyrics(
+                videoId = next.videoId,
+                title = next.title,
+                artist = next.artist,
+                durationMs = 0L,
+                album = next.albumName,
+                sources = AppSettings.lyricsSources.value,
+                order = AppSettings.lyricsSourceOrder.value,
+                prioritizeSyllableSync = AppSettings.prioritizeSyllableSync.value,
+            )
+            val lines = found?.lines?.takeIf(EmbeddedLyrics::isSynced) ?: return
+            LyricsTranslation.translate(next.videoId, lines, carTranslationTarget())
         }
     }
 
