@@ -221,6 +221,7 @@ const val EXTRA_BOUNDED_CONTEXT_CONTINUATION = "bitchord.boundedContext.continua
 /** Session command used to smoothly swap the current track's version (film vs release). */
 const val ACTION_SWAP_VERSION = "com.music.bitchord.action.SWAP_VERSION"
 const val ACTION_SWAP_CAR_LINES = "com.music.bitchord.action.SWAP_CAR_LINES"
+const val ACTION_CAR_TRANSLATION_ONLY = "com.music.bitchord.action.CAR_TRANSLATION_ONLY"
 const val EXTRA_SWAP_MEDIA_ITEM = "bitchord.swap.media_item"
 
 /** Session command used by the media notification's and the 4×1 widget's Favorite button. */
@@ -866,6 +867,7 @@ class PlaybackService : MediaLibraryService() {
     private val upgradeQualityCommand = SessionCommand(ACTION_UPGRADE_QUALITY, Bundle.EMPTY)
     private val swapVersionCommand = SessionCommand(ACTION_SWAP_VERSION, Bundle.EMPTY)
     private val swapCarLinesCommand = SessionCommand(ACTION_SWAP_CAR_LINES, Bundle.EMPTY)
+    private val carTranslationOnlyCommand = SessionCommand(ACTION_CAR_TRANSLATION_ONLY, Bundle.EMPTY)
     private val queueDragCommand = SessionCommand(ACTION_QUEUE_DRAG, Bundle.EMPTY)
     private val queueMoveToUserCommand = SessionCommand(ACTION_QUEUE_MOVE_TO_USER, Bundle.EMPTY)
     private val queueReplayHistoryCommand = SessionCommand(ACTION_QUEUE_REPLAY_HISTORY, Bundle.EMPTY)
@@ -2380,7 +2382,16 @@ class PlaybackService : MediaLibraryService() {
                 .setDisplayName(getString(R.string.car_swap_lines))
                 .build()
         }
-        return notificationButtons() + listOfNotNull(station, revert, swapLines)
+        // Turns the car's lyric into the translation alone (and asks for it), so a
+        // song in another language can be read in one's own at a glance.
+        val translationOnly = if (!AppSettings.carLyrics.value) null else {
+            CommandButton.Builder(CommandButton.ICON_UNDEFINED)
+                .setCustomIconResId(R.drawable.ic_car_translate)
+                .setSessionCommand(carTranslationOnlyCommand)
+                .setDisplayName(getString(R.string.car_translation_only))
+                .build()
+        }
+        return notificationButtons() + listOfNotNull(station, revert, swapLines, translationOnly)
     }
 
     /** Android Auto / Automotive controllers currently connected to the session. */
@@ -8797,6 +8808,38 @@ class PlaybackService : MediaLibraryService() {
                     updateLyricSubtitle()
                 }
             }
+            prefetchNextTranslation()
+        }
+    }
+
+    /**
+     * Translates the song after this one ahead of time. With the screen off the
+     * network can be held back, so a song that changes then would arrive without
+     * its translation; this warms the cache while the connection is still good.
+     * Best effort: any failure just leaves the song to be translated when it plays.
+     */
+    private suspend fun prefetchNextTranslation() {
+        if (!(AppSettings.phoneLyricsTranslation.value ||
+                (AppSettings.carLyrics.value && (AppSettings.carLyricsTranslation.value || AppSettings.carLyricsTranslationOnly.value)))
+        ) return
+        val next = withContext(Dispatchers.Main) {
+            val p = player ?: return@withContext null
+            val i = p.nextMediaItemIndex
+            if (i == androidx.media3.common.C.INDEX_UNSET) null else p.getMediaItemAt(i).toSong()
+        } ?: return
+        runCatching {
+            val found = LyricsRepository.lyrics(
+                videoId = next.videoId,
+                title = next.title,
+                artist = next.artist,
+                durationMs = 0L,
+                album = next.albumName,
+                sources = AppSettings.lyricsSources.value,
+                order = AppSettings.lyricsSourceOrder.value,
+                prioritizeSyllableSync = AppSettings.prioritizeSyllableSync.value,
+            )
+            val lines = found?.lines?.takeIf(EmbeddedLyrics::isSynced) ?: return
+            LyricsTranslation.translate(next.videoId, lines, carTranslationTarget())
         }
     }
 
@@ -8842,7 +8885,7 @@ class PlaybackService : MediaLibraryService() {
             val idx = lines.indexOfLast { it.timeMs <= pos }
             val currentLine = lines.getOrNull(idx)
             if (currentLine != null && !currentLine.isGap && currentLine.text.isNotBlank()) {
-                val wantCar = AppSettings.carLyrics.value && AppSettings.carLyricsTranslation.value
+                val wantCar = AppSettings.carLyrics.value && (AppSettings.carLyricsTranslation.value || AppSettings.carLyricsTranslationOnly.value)
                 val wantPhone = AppSettings.phoneLyricsTranslation.value
                 if (wantCar || wantPhone) {
                     carTranslated = carTranslationFor(lines, currentSong.videoId, idx, currentLine)
@@ -8868,9 +8911,15 @@ class PlaybackService : MediaLibraryService() {
             currentSong.artist,
         )
         val newCarLine = if (AppSettings.carLyrics.value && playingNow && carConnected()) {
-            if (originalLine != null && AppSettings.carLyricsTranslation.value && !carTranslated.isNullOrBlank()) "$originalLine ／ $carTranslated" else originalLine
+            when {
+                originalLine == null -> null
+                carTranslated.isNullOrBlank() -> originalLine
+                AppSettings.carLyricsTranslationOnly.value -> carTranslated
+                AppSettings.carLyricsTranslation.value -> "$originalLine ／ $carTranslated"
+                else -> originalLine
+            }
         } else null
-        val surfacesKey = "${AppSettings.carLyricsOnTitle.value}|${AppSettings.carLyricsTranslation.value}|${AppSettings.phoneLyricsTranslation.value}|${AppSettings.phoneLyrics.value}|${AppSettings.phoneLyricsOnTitle.value}|${AppSettings.phoneLyricsNewline.value}"
+        val surfacesKey = "${AppSettings.carLyricsOnTitle.value}|${AppSettings.carLyricsTranslation.value}|${AppSettings.carLyricsTranslationOnly.value}|${AppSettings.phoneLyricsTranslation.value}|${AppSettings.phoneLyrics.value}|${AppSettings.phoneLyricsOnTitle.value}|${AppSettings.phoneLyricsNewline.value}"
         var announce = false
         if (newCarLine != carLyricLine || surfacesKey != lyricSurfacesKey) {
             carLyricLine = newCarLine
@@ -8916,16 +8965,26 @@ class PlaybackService : MediaLibraryService() {
             carTranslation = null
             carTranslationJob?.cancel()
             carTranslationJob = scope.launch(Dispatchers.IO) {
-                val result = runCatching {
-                    LyricsTranslation.translate(videoId, lines, carTranslationTarget())
-                }.getOrNull()
-                if (result is LyricsTranslation.Result.Translated) {
-                    withContext(Dispatchers.Main) {
-                        if (carTranslationFor === lines) {
-                            carTranslation = result.lines
-                            updateLyricSubtitle()
+                // With the screen off the network can be late to come back and the
+                // on-device model refuses to run in the background, so one failed
+                // try is not the answer: ask again a few times before giving up.
+                var attempt = 0
+                while (true) {
+                    val result = runCatching {
+                        LyricsTranslation.translate(videoId, lines, carTranslationTarget())
+                    }.getOrNull()
+                    if (result is LyricsTranslation.Result.Translated) {
+                        withContext(Dispatchers.Main) {
+                            if (carTranslationFor === lines) {
+                                carTranslation = result.lines
+                                updateLyricSubtitle()
+                            }
                         }
+                        break
                     }
+                    // SameLanguage is a real answer; only a failure is retried.
+                    if (result is LyricsTranslation.Result.SameLanguage || ++attempt > 4) break
+                    delay(4_000L * attempt)
                 }
             }
         }
@@ -9643,6 +9702,7 @@ class PlaybackService : MediaLibraryService() {
                 .add(startStationCommand)
                 .add(revertToOriginalCommand)
                 .add(swapCarLinesCommand)
+                .add(carTranslationOnlyCommand)
                 .add(swapToVersionCommand)
                 .add(beginRadioQueueCommand)
                 .add(commitRadioQueueCommand)
@@ -9727,6 +9787,7 @@ class PlaybackService : MediaLibraryService() {
                 ACTION_START_STATION -> startStationFromSession()
                 ACTION_REVERT_TO_ORIGINAL -> revertCurrentToOriginal()
                 ACTION_SWAP_CAR_LINES -> AppSettings.setCarLyricsOnTitle(!AppSettings.carLyricsOnTitle.value)
+                ACTION_CAR_TRANSLATION_ONLY -> AppSettings.setCarLyricsTranslationOnly(!AppSettings.carLyricsTranslationOnly.value)
                 ACTION_SWAP_TO_VERSION -> swapCurrentToVersion(args)
                 ACTION_BEGIN_RADIO_QUEUE -> beginRadioQueue()
                 ACTION_COMMIT_RADIO_QUEUE -> player?.let(::saveQueueSnapshotImmediately)

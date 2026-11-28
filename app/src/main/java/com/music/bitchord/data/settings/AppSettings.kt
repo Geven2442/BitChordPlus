@@ -709,6 +709,7 @@ object AppSettings {
     val carLyricsOnTitle = MutableStateFlow(false)
     /** Android Auto lyric line also carries a translation (original ／ translation). */
     val carLyricsTranslation = MutableStateFlow(false)
+    val carLyricsTranslationOnly = MutableStateFlow(false)
     val phoneLyricsTranslation = MutableStateFlow(false)
     val onDeviceTranslation = MutableStateFlow(false)
     val localTranslationEngine = MutableStateFlow(LocalTranslationEngine.AUTO)
@@ -1244,6 +1245,7 @@ object AppSettings {
         carLyrics.value = prefs.getBoolean(KEY_CAR_LYRICS, true)
         carLyricsOnTitle.value = prefs.getBoolean(KEY_CAR_LYRICS_ON_TITLE, false)
         carLyricsTranslation.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION, false)
+        carLyricsTranslationOnly.value = prefs.getBoolean(KEY_CAR_LYRICS_TRANSLATION_ONLY, false)
         phoneLyricsTranslation.value = prefs.getBoolean(KEY_PHONE_LYRICS_TRANSLATION, false)
         onDeviceTranslation.value = prefs.getBoolean(KEY_ON_DEVICE_TRANSLATION, false)
         localTranslationEngine.value = runCatching {
@@ -1864,6 +1866,11 @@ object AppSettings {
     fun setPhoneLyricsNewline(value: Boolean) {
         phoneLyricsNewline.value = value
         prefs.edit().putBoolean(KEY_PHONE_LYRICS_NEWLINE, value).apply()
+    }
+
+    fun setCarLyricsTranslationOnly(value: Boolean) {
+        carLyricsTranslationOnly.value = value
+        prefs.edit().putBoolean(KEY_CAR_LYRICS_TRANSLATION_ONLY, value).apply()
     }
 
     fun setCarLyricsTranslation(value: Boolean) {
@@ -2735,6 +2742,7 @@ object AppSettings {
     private const val KEY_CAR_LYRICS = "car_lyrics"
     private const val KEY_CAR_LYRICS_ON_TITLE = "car_lyrics_on_title"
     private const val KEY_CAR_LYRICS_TRANSLATION = "car_lyrics_translation"
+    private const val KEY_CAR_LYRICS_TRANSLATION_ONLY = "car_lyrics_translation_only"
     private const val KEY_PHONE_LYRICS_TRANSLATION = "phone_lyrics_translation"
     private const val KEY_ON_DEVICE_TRANSLATION = "on_device_translation"
     private const val KEY_LOCAL_TRANSLATION_ENGINE = "local_translation_engine"

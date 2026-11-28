@@ -79,7 +79,9 @@ object OnDeviceTranslator {
     /** Picks the engine: Nano where the person asked for it or where it is there, ML Kit otherwise. */
     private suspend fun translateLocally(lines: List<String>, target: String): List<String>? =
         when (AppSettings.localTranslationEngine.value) {
-            LocalTranslationEngine.NANO -> translate(lines, target)
+            // Gemini Nano only runs while the app is in front: with the screen off the
+            // system refuses it, so ML Kit takes over instead of giving up.
+            LocalTranslationEngine.NANO -> translate(lines, target) ?: MlKitTranslator.translate(lines, target)
             LocalTranslationEngine.MLKIT -> MlKitTranslator.translate(lines, target)
             LocalTranslationEngine.AUTO ->
                 if (status() == Support.AVAILABLE) translate(lines, target) ?: MlKitTranslator.translate(lines, target)

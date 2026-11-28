@@ -1590,4 +1590,7 @@
     <string name="lyrics_to_traditional">Show Simplified lyrics in Traditional</string>
     <string name="lyrics_to_traditional_subtitle">When the app is in Traditional Chinese, Simplified Chinese lyrics are converted to Traditional directly, with no translation needed</string>
     <string name="car_swap_lines">Swap lyric and title lines</string>
+    <string name="car_translation_only">Car: translation only</string>
+    <string name="car_translation_only_title">Car: show only the translation</string>
+    <string name="car_translation_only_subtitle">On Android Auto, show the lyric line as its translation alone. Turns translation on by itself.</string>
 </resources>

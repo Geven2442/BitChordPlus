@@ -1594,4 +1594,7 @@
     <string name="lyrics_to_traditional">简体歌词自动转繁体</string>
     <string name="lyrics_to_traditional_subtitle">App 语言为繁体中文时，简体中文歌词直接转成繁体显示，不需要点翻译</string>
     <string name="car_swap_lines">交换歌词与歌名</string>
+    <string name="car_translation_only">车机：只显示翻译</string>
+    <string name="car_translation_only_title">车机：只显示翻译</string>
+    <string name="car_translation_only_subtitle">Android Auto 的歌词行只显示翻译后的文字，并自动开启翻译；车机画面上也有按钮可以随时切换</string>
 </resources>
