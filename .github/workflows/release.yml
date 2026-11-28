@@ -1,0 +1,23 @@
+name: publish-release
+on:
+  push:
+    branches: [release-upload]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish release from uploaded APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk=$(ls releases/*.apk | head -1)
+          tag=$(cat releases/TAG)
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk" --clobber
+            gh release edit "$tag" --notes-file releases/NOTES.md
+          else
+            gh release create "$tag" "$apk" --target main --title "BitChord+ ${tag#v}" --notes-file releases/NOTES.md
+          fi
