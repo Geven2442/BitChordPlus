@@ -132,9 +132,6 @@ object LyricsTranslation {
 
     /** Told after Google's service has translated a song, so an offline engine can fetch what it needs. */
     var onTranslated: (sourceLanguage: String, target: String) -> Unit = { _, _ -> }
-    /** Why the last request to the online service failed, for the diagnostics list. */
-    @Volatile var lastFailure: String? = null
-
     private val client by lazy {
         Http.client.newBuilder()
             .callTimeout(12, TimeUnit.SECONDS)
@@ -565,8 +562,7 @@ object LyricsTranslation {
             client.newCall(request).awaitBody()
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (error: IOException) {
-            lastFailure = error.message ?: error.javaClass.simpleName
+        } catch (_: IOException) {
             return null
         }
         return runCatching {

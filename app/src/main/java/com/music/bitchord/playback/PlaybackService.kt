@@ -987,35 +987,6 @@ class PlaybackService : MediaLibraryService() {
     private var carTranslation: List<LyricLine>? = null
     private var carTranslationFor: List<LyricLine>? = null
     private var carTranslationJob: Job? = null
-
-    /** Whether the system is holding this app's network back, as last reported. Null: not told yet. */
-    @Volatile private var networkBlocked: Boolean? = null
-    private var networkCallback: android.net.ConnectivityManager.NetworkCallback? = null
-
-    /** A song whose translation failed and should be asked for again once the network is back. */
-    private fun retryFailedTranslation() {
-        scope.launch(Dispatchers.Main) {
-            if (carTranslationFor != null && carTranslation == null && carTranslationJob?.isActive != true) {
-                carTranslationFor = null
-                updateLyricSubtitle()
-            }
-        }
-    }
-
-    private fun watchNetwork() {
-        val cm = getSystemService(android.net.ConnectivityManager::class.java) ?: return
-        val callback = object : android.net.ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: android.net.Network) {
-                retryFailedTranslation()
-            }
-
-            override fun onBlockedStatusChanged(network: android.net.Network, blocked: Boolean) {
-                networkBlocked = blocked
-                if (!blocked) retryFailedTranslation()
-            }
-        }
-        if (runCatching { cm.registerDefaultNetworkCallback(callback) }.isSuccess) networkCallback = callback
-    }
     private var lastPublishedSubtitle: String? = null
     private var carLyricLine: String? = null
     private var lyricSurfacesKey = ""
@@ -1495,7 +1466,6 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onCreate() {
         super.onCreate()
-        watchNetwork()
 
         if (com.music.bitchord.data.innertube.Innertube.cookie == null) {
             com.music.bitchord.data.innertube.Innertube.cookie = com.music.bitchord.auth.AuthStore(this).cookie
@@ -8680,10 +8650,6 @@ class PlaybackService : MediaLibraryService() {
 
 
     override fun onDestroy() {
-        networkCallback?.let { cb ->
-            runCatching { getSystemService(android.net.ConnectivityManager::class.java)?.unregisterNetworkCallback(cb) }
-        }
-        networkCallback = null
         statusBarLyrics.cancel()
         crossfade?.cancelAutoMixVisual()
         invalidateQueueUndo()
@@ -8831,38 +8797,6 @@ class PlaybackService : MediaLibraryService() {
                     updateLyricSubtitle()
                 }
             }
-            prefetchNextTranslation()
-        }
-    }
-
-    /**
-     * Translates the song after this one ahead of time. With the screen off the
-     * network can be held back, so a song that changes then would arrive without
-     * its translation; this warms the cache while the connection is still good.
-     * Best effort: any failure just leaves the song to be translated when it plays.
-     */
-    private suspend fun prefetchNextTranslation() {
-        if (!(AppSettings.phoneLyricsTranslation.value ||
-                (AppSettings.carLyrics.value && AppSettings.carLyricsTranslation.value))
-        ) return
-        val next = withContext(Dispatchers.Main) {
-            val p = player ?: return@withContext null
-            val i = p.nextMediaItemIndex
-            if (i == androidx.media3.common.C.INDEX_UNSET) null else p.getMediaItemAt(i).toSong()
-        } ?: return
-        runCatching {
-            val found = LyricsRepository.lyrics(
-                videoId = next.videoId,
-                title = next.title,
-                artist = next.artist,
-                durationMs = 0L,
-                album = next.albumName,
-                sources = AppSettings.lyricsSources.value,
-                order = AppSettings.lyricsSourceOrder.value,
-                prioritizeSyllableSync = AppSettings.prioritizeSyllableSync.value,
-            )
-            val lines = found?.lines?.takeIf(EmbeddedLyrics::isSynced) ?: return
-            LyricsTranslation.translate(next.videoId, lines, carTranslationTarget())
         }
     }
 
@@ -8981,53 +8915,17 @@ class PlaybackService : MediaLibraryService() {
             carTranslationFor = lines
             carTranslation = null
             carTranslationJob?.cancel()
-            val songTitle = player?.currentMediaItem?.mediaMetadata?.title?.toString().orEmpty()
             carTranslationJob = scope.launch(Dispatchers.IO) {
-                // With the screen off the network can be late to come back and the
-                // on-device model refuses to run in the background, so one failed
-                // try is not the answer: ask again a few times before giving up.
-                // A song that still fails is asked for again when the network
-                // callback says the connection is back (retryFailedTranslation).
-                var attempt = 0
-                while (true) {
-                    LyricsTranslation.lastFailure = null
-                    var thrown: Throwable? = null
-                    val result = try {
-                        LyricsTranslation.translate(videoId, lines, carTranslationTarget())
-                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                        throw cancelled
-                    } catch (error: Throwable) {
-                        thrown = error
-                        null
-                    }
-                    TranslationDiag.add(buildString {
-                        append(java.text.SimpleDateFormat("HH:mm:ss", Locale.US).format(java.util.Date()))
-                        append(' ').append(songTitle.take(24))
-                        append(" | 螢幕").append(if (isScreenOn()) "開" else "關")
-                        append(" | 網路").append(when (networkBlocked) { true -> "被系統擋"; false -> "正常"; null -> "?" })
-                        append(" | ").append(
-                            when (result) {
-                                is LyricsTranslation.Result.Translated -> if (result.fromCache) "快取" else "已翻譯"
-                                is LyricsTranslation.Result.SameLanguage -> "同語言"
-                                LyricsTranslation.Result.Unavailable ->
-                                    "失敗 " + (LyricsTranslation.lastFailure ?: "")
-                                null -> "錯誤 " + (thrown?.javaClass?.simpleName ?: "") + " " + (thrown?.message ?: "")
-                            }.trim(),
-                        )
-                        append(" | 目標 ").append(carTranslationTarget())
-                    })
-                    if (result is LyricsTranslation.Result.Translated) {
-                        withContext(Dispatchers.Main) {
-                            if (carTranslationFor === lines) {
-                                carTranslation = result.lines
-                                updateLyricSubtitle()
-                            }
+                val result = runCatching {
+                    LyricsTranslation.translate(videoId, lines, carTranslationTarget())
+                }.getOrNull()
+                if (result is LyricsTranslation.Result.Translated) {
+                    withContext(Dispatchers.Main) {
+                        if (carTranslationFor === lines) {
+                            carTranslation = result.lines
+                            updateLyricSubtitle()
                         }
-                        break
                     }
-                    // SameLanguage is a real answer; only a failure is retried.
-                    if (result is LyricsTranslation.Result.SameLanguage || ++attempt > 4) break
-                    delay(4_000L * attempt)
                 }
             }
         }

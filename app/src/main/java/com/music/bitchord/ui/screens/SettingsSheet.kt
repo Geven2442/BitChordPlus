@@ -1827,18 +1827,6 @@ fun SettingsScreen(
                         onClick = { AppSettings.setPhoneLyricsTranslation(!phoneLyricsTranslation) },
                     )
                 }
-                if (phoneLyricsTranslation || (carLyrics && carLyricsTranslation)) {
-                    val diagTitle = stringResource(R.string.translation_diag)
-                    row(diagTitle, "lyrics", "translation", "log", "debug") {
-                        val diag by com.music.bitchord.playback.TranslationDiag.entries.collectAsStateWithLifecycle()
-                        SettingsRow(
-                            icon = SfIcons.Language,
-                            title = diagTitle,
-                            subtitle = if (diag.isEmpty()) stringResource(R.string.translation_diag_empty)
-                                else diag.joinToString("\n"),
-                        )
-                    }
-                }
                 if (carLyrics) {
                     val carTranslationTitle = stringResource(R.string.car_lyrics_translation)
                     row(carTranslationTitle, "lyrics", "android", "auto", "car", "translation") {

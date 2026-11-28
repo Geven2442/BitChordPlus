@@ -1625,6 +1625,4 @@
     <string name="lyrics_to_traditional">簡體歌詞自動轉繁體</string>
     <string name="lyrics_to_traditional_subtitle">App 語言為繁體中文時，簡體中文歌詞直接轉成繁體顯示，不需要按翻譯</string>
     <string name="car_swap_lines">交換歌詞與歌名</string>
-    <string name="translation_diag">背景翻譯紀錄</string>
-    <string name="translation_diag_empty">還沒有鎖定畫面翻譯紀錄。播一首歌、關螢幕，再回來這裡看。</string>
 </resources>

@@ -1590,6 +1590,4 @@
     <string name="lyrics_to_traditional">Show Simplified lyrics in Traditional</string>
     <string name="lyrics_to_traditional_subtitle">When the app is in Traditional Chinese, Simplified Chinese lyrics are converted to Traditional directly, with no translation needed</string>
     <string name="car_swap_lines">Swap lyric and title lines</string>
-    <string name="translation_diag">Background translation log</string>
-    <string name="translation_diag_empty">No lock-screen translations yet. Play a song, turn the screen off, then come back here.</string>
 </resources>
